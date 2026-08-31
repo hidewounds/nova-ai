@@ -188,6 +188,11 @@ const DEFAULT_CONFIG = {
         handoffEmail: "",
     },
 
+    site: {
+        url: "", // linked website URL for guide + learn
+        lastAnalyzedAt: null,
+    },
+
     security: {
         widgetEnabled: true,
     },

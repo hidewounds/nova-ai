@@ -25,26 +25,50 @@ router.post("/transcribe", requireScope("echo:transcribe"), express.json({ limit
         const sidecarUrl = env.echoSidecarUrl || (require("../../core/config/service").getConfig(req.nova.businessId).echo?.sidecarUrl);
         const hasAudio = body.audioBase64 && typeof body.audioBase64 === "string" && body.audioBase64.length > 20;
 
-        if (hasAudio && sidecarUrl) {
+        if (hasAudio) {
+            // 1. try sidecar if configured
+            if (sidecarUrl) {
+                try {
+                    const buf = Buffer.from(body.audioBase64, "base64");
+                    const { callSidecar } = require("../../core/echo/transcribe");
+                    const result = await callSidecar({
+                        sidecarUrl,
+                        audioBuffer: buf,
+                        filename: `audio.${(body.mimeType || "webm").split("/")[1] || "webm"}`,
+                        params,
+                    });
+                    const db = require("../../db").get();
+                    const crypto = require("../../lib/crypto");
+                    const id = `ect_${crypto.randomHex(10)}`;
+                    db().prepare("INSERT INTO echo_transcripts (transcript_id, business_id, customer_id, conversation_id, language, transcript, duration_ms, created_at, initial_prompt, word_timestamps_json, model) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+                        .run(id, req.nova.businessId, customerId, conversationId, result.language || params.language || "", result.text || "", body.durationMs || 0, Date.now(), params.prompt || "", JSON.stringify(result.segments?.flatMap((s) => s.words || []) || []), params.model || "turbo");
+                    return res.json({ transcriptId: id, text: result.text, language: result.language || params.language, segments: result.segments || [], wordTimestamps: params.wordTimestamps, sidecar: true });
+                } catch (e) {
+                    req.log && req.log.warn && req.log.warn("echo sidecar failed, trying Whisper", { error: e.message });
+                }
+            }
+            // 2. OpenAI Whisper fallback (uses OPENAI_API_KEY, no sidecar needed) — Vercel compatible
             try {
                 const buf = Buffer.from(body.audioBase64, "base64");
-                const { callSidecar } = require("../../core/echo/transcribe");
-                const result = await callSidecar({
-                    sidecarUrl,
+                const { callOpenAIWhisper } = require("../../core/echo/transcribe");
+                const whisper = await callOpenAIWhisper({
                     audioBuffer: buf,
                     filename: `audio.${(body.mimeType || "webm").split("/")[1] || "webm"}`,
-                    params,
+                    language: params.language,
+                    prompt: params.prompt,
+                    apiKey: env.ai.openaiApiKey || process.env.OPENAI_API_KEY,
+                    baseUrl: env.ai.openaiBaseUrl || process.env.OPENAI_BASE_URL,
                 });
-                // persist real transcript
-                const db = require("../../db").get();
-                const crypto = require("../../lib/crypto");
-                const id = `ect_${crypto.randomHex(10)}`;
-                db().prepare("INSERT INTO echo_transcripts (transcript_id, business_id, customer_id, conversation_id, language, transcript, duration_ms, created_at, initial_prompt, word_timestamps_json, model) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
-                    .run(id, req.nova.businessId, customerId, conversationId, result.language || params.language || "", result.text || "", body.durationMs || 0, Date.now(), params.prompt || "", JSON.stringify(result.segments?.flatMap((s) => s.words || []) || []), params.model || "turbo");
-                return res.json({ transcriptId: id, text: result.text, language: result.language || params.language, segments: result.segments || [], wordTimestamps: params.wordTimestamps, sidecar: true });
+                if (whisper && whisper.text) {
+                    const db = require("../../db").get();
+                    const crypto = require("../../lib/crypto");
+                    const id = `ect_${crypto.randomHex(10)}`;
+                    db().prepare("INSERT INTO echo_transcripts (transcript_id, business_id, customer_id, conversation_id, language, transcript, duration_ms, created_at, initial_prompt, word_timestamps_json, model) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+                        .run(id, req.nova.businessId, customerId, conversationId, whisper.language || params.language || "", whisper.text || "", body.durationMs || 0, Date.now(), params.prompt || "", JSON.stringify([]), "whisper-1");
+                    return res.json({ transcriptId: id, text: whisper.text, language: whisper.language || params.language, sidecar: false, provider: "openai_whisper" });
+                }
             } catch (e) {
-                // fall through to stub
-                req.log && req.log.warn && req.log.warn("echo sidecar failed, falling back to stub", { error: e.message });
+                req.log && req.log.warn && req.log.warn("whisper fallback failed", { error: e.message });
             }
         }
 

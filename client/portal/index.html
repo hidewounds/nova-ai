@@ -239,6 +239,15 @@
       <div><label>Interval between attempts (days)</label><input id="fuInt" type="number" min="1" max="60"></div>
     </div>
 
+    <h3 style="margin-top:22px">Website — Learn &amp; Full Operation Guide <span class="muted">(human-like: understands site, what is sold, auto-updates knowledge/FAQs)</span></h3>
+    <div class="card" style="background:linear-gradient(135deg, rgba(139,92,246,.08), rgba(6,182,214,.06));border:1px solid var(--line)">
+      <p class="muted">Link your website — NOVA fetches it, learns products/policies, creates knowledge/FAQs automatically, and builds a guide that <b style="color:#fff">points at real elements</b> on screen in short steps and ends with “Ask me any question on NOVA”. Chat stays fully operational (basics + guide).</p>
+      <div class="row"><div><label>Website URL<input id="siteUrl" placeholder="https://your-site.com"></label></div><div style="flex:0 0 auto;padding-bottom:1px"><button class="btn primary" onclick="analyzeSite()">Analyze &amp; Learn</button> <button class="btn ghost" onclick="previewGuide()">Preview Guide</button></div></div>
+      <div id="siteMsg" class="msg"></div>
+      <div id="siteGuidePreview" style="margin-top:10px"></div>
+      <p class="muted" style="font-size:11px;margin-top:8px">Guide overlay: dark glass highlight + arrow points at selector. Customer triggers via widget: “guide me / show me around” or chat “tour”. Knowledge auto-updated with what site sells.</p>
+    </div>
+
     <h3 style="margin-top:22px">Assistant identity &amp; rules <span class="muted">(unified brain — no role selection)</span></h3>
     <div class="row"><div><label>Assistant name</label><input id="cfgName" placeholder="Stella"></div><div><label>Plan</label><div id="cfgPlanBadge" class="muted" style="padding:8px 0;font-size:13px">—</div></div></div>
     <div class="card" style="background:rgba(139,92,246,.08);border-left:4px solid #8b5cf6"><h3 style="margin:0 0 6px">Unified Brain — Active</h3><p class="muted" style="margin:0">One brain with 6 learned patterns. No stacking, no caps. Previously you picked from 9 roles — now the brain adapts fluidly. Your plan now limits conversations, not skills.</p></div>
@@ -775,6 +784,26 @@ async function loadFlags() {
   const me = await api("GET", "/me");
   flagList.innerHTML = Object.entries(me.flags).map(([k,v]) =>
     `<div class="flag"><span>${k}</span><span style="color:${v?"var(--ok)":"var(--mut)"}">${v?"enabled":"off"}</span></div>`).join("");
+}
+async function analyzeSite(){
+  const url=(document.getElementById("siteUrl")?.value||"").trim();
+  if(!url || !/^https?:\/\//i.test(url)){ msg("siteMsg","Provide https:// URL", false); return; }
+  msg("siteMsg","Analyzing — learning what site sells and building guide...", true);
+  try{
+    const r=await api("POST","/site/analyze",{siteUrl:url});
+    msg("siteMsg", `Learned: ${r.title} (${r.siteType}) — ${r.products.length} products, ${r.faqs.length} FAQs, ${r.knowledgeCreated} knowledge created, ${r.steps.length} guide steps. Human-like knowledge updated.`, true);
+    document.getElementById("siteGuidePreview").innerHTML='<b>'+esc(r.title)+'</b> <span class="muted">'+esc(r.siteType)+'</span><br><span class="muted">Steps:</span><ol style="margin:6px 0 0;padding-left:18px">'+r.steps.map(s=>'<li><b>'+esc(s.title)+'</b> <span class="muted">'+esc(s.selector)+'</span><br><span class="muted" style="font-size:11px">'+esc(s.description)+'</span></li>').join("")+'</ol>';
+    // also refresh knowledge tab if open
+    try{ loadKnowledge(); }catch{}
+  }catch(e){ msg("siteMsg", e.message, false); }
+}
+async function previewGuide(){
+  try{
+    const r=await api("GET","/site/guide");
+    if(!r.guide){ msg("siteMsg","No guide yet — Analyze first", false); return; }
+    msg("siteMsg","Guide preview loaded — widget will point at selectors below. Try in widget: 'guide me'", true);
+    document.getElementById("siteGuidePreview").innerHTML='<ol style="margin:6px 0 0;padding-left:18px">'+r.guide.steps.map(s=>'<li><b>'+esc(s.title)+'</b> <code style="background:rgba(255,255,255,.06);padding:2px 6px;border-radius:6px">'+esc(s.selector)+'</code> — '+esc(s.description)+'</li>').join("")+'</ol>';
+  }catch(e){ msg("siteMsg", e.message, false); }
 }
 
 async function loadAddons(){ const ad=await api("GET","/addons").catch(()=>({addons:[]})); const list=document.getElementById("addonList"); if(list){ const addons=ad.addons||[]; if(!addons.length){ list.innerHTML='<span class="muted">No add-ons — unified brain includes all patterns.</span>'; } else { list.innerHTML=addons.map(a=>`<div class="addon-row"><div><b>${a.meta?.label||a.key}</b><br><span class="muted">${a.meta?.description||""}</span></div><label class="switch"><input type="checkbox" ${a.enabled?"checked":""} onchange="toggleAddon('${a.key}', this.checked?'1':'0')"><span class="slider"></span></label></div>`).join(""); } } const b1=document.getElementById("agentPlanBadge"); if(b1) b1.textContent="Unified"; const b2=document.getElementById("agentRoleCount"); if(b2) b2.textContent="6 patterns — no caps"; }

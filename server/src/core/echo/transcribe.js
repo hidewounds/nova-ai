@@ -23,9 +23,24 @@ function transcribeParams({ language, model, prompt, wordTimestamps } = {}) {
     };
 }
 
+async function callOpenAIWhisper({ audioBuffer, filename, language, prompt, apiKey, baseUrl }) {
+    const key = apiKey || process.env.OPENAI_API_KEY || require("../../env").ai.openaiApiKey;
+    const url = (baseUrl || process.env.OPENAI_BASE_URL || require("../../env").ai.openaiBaseUrl || "https://api.openai.com/v1").replace(/\/$/, "") + "/audio/transcriptions";
+    if (!key) throw new Error("OPENAI_API_KEY missing for Whisper");
+    const form = new FormData();
+    form.append("file", new Blob([audioBuffer]), filename || "audio.webm");
+    form.append("model", "whisper-1");
+    if (language && language !== "auto") form.append("language", language);
+    if (prompt) form.append("prompt", String(prompt).slice(0, 200));
+    const res = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${key}` }, body: form });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error?.message || `Whisper error ${res.status}`);
+    return { text: data.text || "", language: data.language || language || "" };
+}
+
 /**
  * Stub transcription (sidecar not available). Persists audio metadata as an
- * echo transcript so the conversation still flows.
+ * echo transcript so the conversation still flows. Now tries OpenAI Whisper before stub.
  */
 function stubTranscribe({ businessId, customerId, conversationId, language, audioMeta, prompt, wordTimestamps, model }) {
     const transcriptId = `ect_${crypto.randomHex(10)}`;
@@ -40,7 +55,7 @@ function stubTranscribe({ businessId, customerId, conversationId, language, audi
             customerId,
             conversationId || null,
             lang,
-            `[audio received: ${audioMeta?.format || "webm"} ${audioMeta?.bytes || 0} bytes — echo sidecar not available]`,
+            `[audio received: ${audioMeta?.format || "webm"} ${audioMeta?.bytes || 0} bytes — echo sidecar not available, Whisper fallback attempted]`,
             audioMeta?.durationMs || 0,
             now,
             String(prompt || "").slice(0, 600),
@@ -250,6 +265,7 @@ module.exports = {
     transcribeParams,
     stubTranscribe,
     callSidecar,
+    callOpenAIWhisper,
     createStreamingSession,
     checkSidecarHealth,
 };

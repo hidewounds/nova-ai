@@ -44,6 +44,7 @@ router.get("/config", (req, res, next) => {
         const voiceEnabled = addons.find((a) => a.key === "voice_channel")?.enabled || false;
         const multiEnabled = addons.find((a) => a.key === "multilanguage")?.enabled || false;
         const chrono = (() => { try { return require("../../core/chrono/schedule").getSchedule(req.nova.businessId); } catch { return null; } })();
+        const guide = (() => { try { return require("../../core/guide/store").getGuide(req.nova.businessId); } catch { return null; } })();
 
         res.json({
             config: {
@@ -55,18 +56,28 @@ router.get("/config", (req, res, next) => {
                 welcomeMessage:
                     fullConfig.assistant.welcomeMessage ||
                     `Hi! I'm ${fullConfig.assistant.name}. How can I help you today?`,
-                // add-on surface (sanitized)
                 addons: { voice_channel: voiceEnabled, multilanguage: multiEnabled },
                 chronoEnabled: true,
                 voiceEnabled,
                 multilanguageEnabled: multiEnabled,
                 slotDuration: chrono?.slotDuration || 30,
                 greetingTemplate: fullConfig.call?.greetingTemplate || "",
+                guideAvailable: Boolean(guide && guide.steps && guide.steps.length),
+                siteUrl: fullConfig.site?.url || guide?.siteUrl || "",
             },
         });
     } catch (error) {
         next(error);
     }
+});
+// GET /api/v1/widget/guide — fetch guide steps for overlay (pointing)
+router.get("/guide", (req, res, next) => {
+    try {
+        authenticateWidget(req);
+        const guide = require("../../core/guide/store").getGuide(req.nova.businessId);
+        if (!guide) return res.json({ guide: null, message: "No guide. Business owner: run site analyze in Portal." });
+        res.json({ guide });
+    } catch (error) { next(error); }
 });
 
 // GET /api/v1/widget/availability — public customer-facing plan (ranked, no rush)

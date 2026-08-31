@@ -40,6 +40,19 @@
     }
 
     // -------------------------------------------------------
+    // load guide overlay (pointer) — nova-guide.js
+    // -------------------------------------------------------
+    (function loadGuide(){
+        try {
+            var g = document.createElement("script");
+            g.src = apiBase + "/widget/nova-guide.js";
+            g.async = true;
+            g.onerror = function(){};
+            document.head.appendChild(g);
+        } catch {}
+    })();
+
+    // -------------------------------------------------------
     // visitor identity
     // -------------------------------------------------------
 
@@ -285,9 +298,39 @@
         return element;
     }
 
+    function maybeGuideIntent(text){
+        var t = String(text||"").toLowerCase();
+        return /guide me|show.*around|tour|how (does|to use) this site|website guide|operate.*site|full operation/.test(t);
+    }
     async function sendMessage() {
         var text = (inputEl.value || "").trim();
         if (!text || busy) return;
+
+        // intercept guide intent locally: fetch guide and start overlay immediately (human-like)
+        if(maybeGuideIntent(text)){
+            // show as user first
+            inputEl.value = "";
+            addMessage("user", text);
+            messages.push({ role: "user", content: text });
+            // try guide overlay
+            try {
+                var gdata = await api("/api/v1/widget/guide", { method: "GET" });
+                if(gdata && gdata.guide && gdata.guide.steps && gdata.guide.steps.length){
+                    if(window.NOVA_GUIDE && window.NOVA_GUIDE.start){
+                        window.NOVA_GUIDE.start(gdata.guide.steps, { onStep: function(){} });
+                        addMessage("assistant", "I'll guide you in "+gdata.guide.steps.length+" short steps — I'll point at each thing. Follow the highlight. At the end, ask me any question on NOVA.");
+                        messages.push({ role: "assistant", content: "I'll guide you in "+gdata.guide.steps.length+" short steps — I'll point at each thing." });
+                        return;
+                    }
+                } else {
+                    addMessage("assistant", "I haven't learned this site yet — I'll need the owner to link the website in Portal → Site Analyze, then I can guide and update knowledge like a human.");
+                    messages.push({ role: "assistant", content: "I haven't learned this site yet." });
+                    return;
+                }
+            } catch(e){
+                // fall through to normal chat
+            }
+        }
 
         inputEl.value = "";
         addMessage("user", text);
@@ -314,6 +357,13 @@
             var reply = data.reply || "Sorry, I could not generate a response.";
             addMessage("assistant", reply);
             messages.push({ role: "assistant", content: reply });
+            // If chat used guide.start capability, backend may return guide in reply? Check for guide trigger in reply and auto-start overlay
+            try {
+                if(/guide.*steps|I'll guide|point at/.test(reply) && window.NOVA_GUIDE){
+                    var gd = await api("/api/v1/widget/guide", { method: "GET" });
+                    if(gd && gd.guide && gd.guide.steps){ window.NOVA_GUIDE.start(gd.guide.steps); }
+                }
+            } catch{}
         } catch (error) {
             loading.remove();
             addMessage("assistant", error.message || "Something went wrong.");

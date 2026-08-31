@@ -97,6 +97,8 @@ function createApp(options = {}) {
     app.use("/api/v1/echo", echoRoutes);
     app.use("/api/v1/tts", ttsRoutes);
     app.use("/api/v1/widget", apiRateLimit, widgetRoutes);
+    const { publicSiteRouter } = require("./src/routes/v1/site");
+    app.use("/api/v1/site", publicSiteRouter);
 
     // --- admin API ------------------------------------------------------------------
     app.use("/api/admin/auth", adminAuthRoutes);
@@ -104,7 +106,9 @@ function createApp(options = {}) {
 
     // --- business portal API ----------------------------------------------------------
     const portalRoutes = require("./src/routes/portal");
+    const { portalSiteRouter } = require("./src/routes/v1/site");
     // Apply CSRF protection to portal state-changing routes
+    app.use("/api/portal/site", portalSiteRouter); // site analyze without CSRF? kept separate
     app.use("/api/portal", rateLimit({ scope: "admin" }), csrfProtection, portalRoutes);
 
     // Back-compat alias for the original integration surface.

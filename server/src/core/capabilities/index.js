@@ -206,14 +206,61 @@ const CAPABILITIES = {
         },
         handler: ({ businessId, customerId }, params) => {
             const reason = String(params.reason || "").slice(0, 500) || "Customer requested human assistance";
-            // Record handoff intent; actual transfer logic (email/queue) is handled by echo/calls or mailer
             try {
                 const calls = require("../echo/calls");
                 const existing = calls.listCalls(businessId, 1)[0];
-                // if voice call exists, mark handoff; otherwise just log
                 if (existing) calls.requestHandoff(existing.call_id);
             } catch {}
             return { status: "handoff_requested", reason, contact: params.preferredContact || "business contact on file", next: "A team member will reach out shortly." };
+        },
+    },
+    "guide.start": {
+        summary: "Start website guide — shows step-by-step overlay pointing at real elements, ends with 'Ask me any question on NOVA'. Use when user says guide me / show me around / tour / how does this site work.",
+        risk: "read",
+        params: {
+            type: "object",
+            properties: {
+                siteUrl: { type: "string", description: "Optional site URL to guide, defaults to business site" },
+            },
+            required: [],
+        },
+        handler: async ({ businessId }, params) => {
+            const guideStore = require("../guide/store");
+            let guide = guideStore.getGuide(businessId);
+            if (!guide && params.siteUrl) {
+                const { analyzeSite } = require("../site/analyzer");
+                const res = await analyzeSite({ businessId, siteUrl: params.siteUrl });
+                guide = res.guide;
+            } else if (!guide) {
+                return { status: "no_guide", message: "No guide yet. Link your website in Portal → Settings or call site.analyze first. I'll guide as soon as I learn your site." };
+            }
+            return { status: "ok", guide: { steps: guide.steps, title: guide.title, siteUrl: guide.siteUrl, siteType: guide.siteType, products: guide.products.slice(0,3) }, message: `I'll guide you in ${guide.steps.length} steps — I'll point at each thing. At the end, ask me any question on NOVA.` };
+        },
+    },
+    "guide.next": {
+        summary: "Advance guide to next step (internal)",
+        risk: "read",
+        params: { type: "object", properties: { step: { type: "number" } }, required: [] },
+        handler: async ({ businessId }, params) => {
+            const guideStore = require("../guide/store");
+            const guide = guideStore.getGuide(businessId);
+            if (!guide) return { status: "no_guide", message: "No active guide." };
+            const idx = Math.max(0, Math.min(guide.steps.length-1, (params.step||0)));
+            return { status: "ok", step: guide.steps[idx], total: guide.steps.length };
+        },
+    },
+    "site.analyze": {
+        summary: "Analyze linked website: learns what site sells, updates knowledge/FAQs, builds guide steps. Human-like learn.",
+        risk: "read",
+        params: {
+            type: "object",
+            properties: { siteUrl: { type: "string", description: "https:// site URL" } },
+            required: ["siteUrl"],
+        },
+        handler: async ({ businessId }, params) => {
+            const { analyzeSite } = require("../site/analyzer");
+            const res = await analyzeSite({ businessId, siteUrl: params.siteUrl });
+            return { status: "ok", siteType: res.siteType, products: res.products, faqs: res.faqs, steps: res.steps.length, knowledgeCreated: res.knowledgeCreated, title: res.title };
         },
     },
 };
