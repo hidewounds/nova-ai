@@ -18,9 +18,24 @@ function connect(dbPath) {
         }
     }
 
-    const directory = path.dirname(dbPath);
-    if (!fs.existsSync(directory)) {
-        fs.mkdirSync(directory, { recursive: true });
+    let targetDir = path.dirname(dbPath);
+    // Vercel serverless has read-only /var/task — use /tmp for SQLite (ephemeral, but boots)
+    const isVercel = Boolean(process.env.VERCEL);
+    if (isVercel && targetDir.startsWith("/var/task")) {
+        // rewrite /var/task/database/... -> /tmp/...
+        dbPath = path.join("/tmp", path.basename(dbPath));
+        targetDir = "/tmp";
+    }
+    if (!fs.existsSync(targetDir)) {
+        try {
+            fs.mkdirSync(targetDir, { recursive: true });
+        } catch (e) {
+            // fallback to /tmp if original dir not writable
+            dbPath = path.join("/tmp", path.basename(dbPath));
+            if (!fs.existsSync("/tmp")) fs.mkdirSync("/tmp", { recursive: true });
+            targetDir = "/tmp";
+            if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+        }
     }
 
     instance = new Database(dbPath);
