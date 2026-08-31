@@ -1,0 +1,22 @@
+{
+  "method": "dpo",
+  "patternId": "all",
+  "stats": {
+    "perPattern": {
+      "customer_support": 2400,
+      "sales": 3100,
+      "shopping_assistant": 2800,
+      "product_advisor": 2100,
+      "lead_qualification": 1900,
+      "general_assistant": 5200
+    },
+    "total": 17500
+  },
+  "result": {
+    "steps": 4375,
+    "avgLoss": 0.6791546085901795,
+    "method": "dpo"
+  },
+  "timestamp": 1788107419523,
+  "brain": "unified"
+}

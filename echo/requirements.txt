@@ -1,0 +1,23 @@
+# NOVA Echo Sidecar Dependencies
+# Install: pip install -r echo/requirements.txt
+
+# Core ASR
+faster-whisper>=1.0.0
+
+# VAD
+torch>=2.0.0
+torchaudio>=2.0.0
+
+# Web server
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+websockets>=12.0
+
+# Audio processing
+numpy>=1.24.0
+
+# TTS (optional)
+piper-tts>=1.2.0
+
+# For development
+# torch --index-url https://download.pytorch.org/whl/cu118  # CUDA version

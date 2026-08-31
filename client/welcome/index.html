@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOVA — Platform Access</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500&display=swap');
+        :root {
+            --bg:#050508; --bg2:#080a14; --surface:rgba(255,255,255,.04); --surface2:rgba(255,255,255,.06);
+            --line:rgba(255,255,255,.07); --line2:rgba(255,255,255,.11);
+            --text:#f1f5f9; --mut:#94a3b8; --mut2:#64748b;
+            --violet:#8b5cf6; --violet2:#a78bfa; --blue:#3b82f6; --cyan:#06b6d4; --green:#10b981;
+            --grad:linear-gradient(135deg,#8b5cf6 0%,#6366f1 45%,#06b6d4 100%);
+            --r:22px;
+        }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        html{scroll-behavior:smooth}
+        body {
+            min-height:100vh; display:flex; flex-direction:column;
+            background:var(--bg); color:var(--text);
+            font-family:"Instrument Sans",system-ui,sans-serif;
+            overflow-x:hidden; position:relative;
+        }
+        body::before{
+            content:""; position:fixed; inset:0; pointer-events:none; opacity:.035; z-index:9998;
+            background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+        .bg{
+            position:fixed; inset:0; z-index:-1; pointer-events:none;
+            background:
+                radial-gradient(900px 600px at 75% -10%, rgba(139,92,246,.18), transparent 60%),
+                radial-gradient(800px 500px at 10% 95%, rgba(6,182,214,.1), transparent 60%),
+                linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+        }
+        .orb{position:fixed; border-radius:50%; filter:blur(36px); opacity:.5; pointer-events:none; mix-blend-mode:screen}
+        .orb1{width:720px;height:720px;background:radial-gradient(circle, rgba(139,92,246,.18), transparent 70%); top:-260px; right:-200px; animation:float 11s ease-in-out infinite}
+        .orb2{width:640px;height:640px;background:radial-gradient(circle, rgba(6,182,214,.12), transparent 70%); bottom:-200px; left:-180px; animation:float 13s ease-in-out infinite reverse}
+        @keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(16px,-18px)}}
+        header{
+            display:flex; align-items:center; gap:14px;
+            padding:18px clamp(20px,6vw,72px);
+            border-bottom:1px solid var(--line);
+            background:rgba(5,5,8,.6); backdrop-filter:blur(20px) saturate(1.4);
+            position:sticky; top:0; z-index:10;
+        }
+        .brand{font-family:"Space Grotesk",sans-serif; font-size:20px; font-weight:700; letter-spacing:-.02em; display:flex; align-items:center; gap:10px}
+        .brand .dot{width:32px;height:32px;border-radius:10px;background:var(--grad);display:grid;place-items:center;font-size:14px;color:#fff;box-shadow:0 4px 14px rgba(139,92,246,.35)}
+        .pill{
+            font-family:"JetBrains Mono",monospace; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+            padding:6px 12px; border-radius:999px; border:1px solid var(--line); color:var(--mut); background:rgba(255,255,255,.04); backdrop-filter:blur(8px);
+        }
+        .pill.ok{color:#6ee7b7; border-color:rgba(16,185,129,.22); background:rgba(16,185,129,.1)}
+        .pill.bad{color:#fda4af; border-color:rgba(239,68,68,.22); background:rgba(239,68,68,.1)}
+        .spacer{flex:1}
+        main{flex:1; display:grid; place-items:center; padding:48px clamp(20px,6vw,72px); position:relative}
+        .hero{max-width:780px; text-align:center; position:relative}
+        .eyebrow{
+            display:inline-flex; align-items:center; gap:8px;
+            font-family:"JetBrains Mono",monospace; font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+            padding:7px 14px; border-radius:999px; border:1px solid rgba(139,92,246,.22); background:rgba(139,92,246,.1); color:#c4b5fd;
+        }
+        .hero h1{
+            font-family:"Space Grotesk",sans-serif; font-size:clamp(32px,5vw,48px); font-weight:700; line-height:.95; letter-spacing:-.03em; margin-top:18px;
+        }
+        .hero h1 b{background:linear-gradient(90deg,#fff 0%,#a5b4fc 35%,#f0abfc 65%,#fff 100%); -webkit-background-clip:text; background-clip:text; color:transparent}
+        .hero p.sub{margin:18px auto 0; max-width:580px; color:var(--mut); font-size:16px; line-height:1.65}
+        .cards{
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; margin-top:44px; text-align:left;
+        }
+        a.card{
+            display:block; text-decoration:none; color:inherit;
+            background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.015));
+            backdrop-filter:blur(16px) saturate(1.2); border:1px solid var(--line); border-radius:var(--r); padding:26px;
+            position:relative; overflow:hidden; transition:transform .35s cubic-bezier(.16,1,.3,1), border-color .35s, box-shadow .35s;
+        }
+        a.card::before{
+            content:""; position:absolute; inset:0; border-radius:inherit; padding:1px;
+            background:linear-gradient(135deg, rgba(255,255,255,.1), transparent 50%, rgba(139,92,246,.14));
+            -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite:xor; mask-composite:exclude; opacity:0; transition:.35s; pointer-events:none;
+        }
+        a.card:hover{transform:translateY(-6px); border-color:rgba(255,255,255,.12); box-shadow:0 24px 64px rgba(0,0,0,.4)}
+        a.card:hover::before{opacity:1}
+        .card .icon{
+            width:48px; height:48px; border-radius:14px; display:grid; place-items:center;
+            background:rgba(255,255,255,.06); border:1px solid var(--line); font-size:22px; margin-bottom:16px; backdrop-filter:blur(8px); transition:.35s;
+        }
+        a.card:hover .icon{background:var(--grad); color:#fff; border-color:transparent; transform:rotate(-6deg) scale(1.05)}
+        .card h2{font-family:"Space Grotesk",sans-serif; font-size:17px; margin-bottom:6px}
+        .card p{color:var(--mut); font-size:13.5px; line-height:1.6}
+        .card .go{display:inline-flex; align-items:center; gap:6px; margin-top:16px; color:var(--violet2); font-weight:700; font-size:13.5px}
+        .card .go::after{content:"→"; transition:transform .22s}
+        a.card:hover .go::after{transform:translateX(4px)}
+        .marquee{margin-top:36px; overflow:hidden; border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:rgba(255,255,255,.02); backdrop-filter:blur(8px)}
+        .marquee-track{display:flex; gap:48px; padding:14px 0; animation:marquee 28s linear infinite; white-space:nowrap}
+        @keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+        .brand2{font-family:"JetBrains Mono",monospace; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--mut2); display:flex; align-items:center; gap:10px}
+        .brand2 i{width:26px;height:26px;border-radius:8px; background:rgba(255,255,255,.06); border:1px solid var(--line); display:grid; place-items:center; font-size:12px}
+        footer{
+            padding:18px clamp(20px,6vw,72px); border-top:1px solid var(--line);
+            display:flex; gap:14px; align-items:center; justify-content:space-between;
+            color:var(--mut); font-size:12.5px; background:rgba(5,5,8,.4); backdrop-filter:blur(12px);
+        }
+        footer .lock{display:flex; align-items:center; gap:6px; font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.04em}
+        @media(max-width:560px){footer{flex-direction:column;gap:8px} .marquee{display:none}}
+    </style>
+</head>
+<body>
+<div class="bg"></div><div class="orb orb1"></div><div class="orb orb2"></div>
+
+<header>
+    <div class="brand"><span class="dot">N</span> NOVA<b>.</b></div>
+    <span class="pill" id="envPill">checking…</span>
+    <div class="spacer"></div>
+    <span class="pill">platform v1.0 · dark glass</span>
+</header>
+
+<main>
+    <section class="hero">
+        <span class="eyebrow">● Self-hosted · Glass · Grounded</span>
+        <h1>The multi‑tenant AI agent platform<br>for <b>your business</b>, self‑hosted.</h1>
+        <p class="sub">
+            NOVA runs entirely on infrastructure you control. Glassmorphic, grounded, and fast — same design system as your live store. Authorized operators sign in below to provision businesses, configure agents, and monitor everything.
+        </p>
+
+        <div class="cards">
+            <a class="card" href="/admin/">
+                <div class="icon">🔐</div>
+                <h2>Admin Dashboard</h2>
+                <p>Manage businesses, agent roles &amp; personality, knowledge, memory settings, customers and audit logs — all in dark glass.</p>
+                <span class="go">Sign in</span>
+            </a>
+            <a class="card" href="/api/health" target="_blank" rel="noopener">
+                <div class="icon">📈</div>
+                <h2>System Status</h2>
+                <p>Live health endpoint — service uptime, environment and active AI model, straight from the platform API.</p>
+                <span class="go">View status</span>
+            </a>
+        </div>
+
+        <div class="marquee">
+            <div class="marquee-track">
+                <span class="brand2"><i>✦</i> One snippet</span>
+                <span class="brand2"><i>⚡</i> Grounded answers</span>
+                <span class="brand2"><i>🧠</i> Memory</span>
+                <span class="brand2"><i>⏱️</i> Chrono &lt;1s</span>
+                <span class="brand2"><i>🎙️</i> Echo voice</span>
+                <span class="brand2"><i>🛡️</i> No hallucinations</span>
+                <span class="brand2"><i>📧</i> Your SMTP</span>
+                <span class="brand2"><i>🔒</i> Local-first</span>
+                <span class="brand2"><i>📈</i> Revenue analytics</span>
+                <span class="brand2"><i>✦</i> One snippet</span>
+                <span class="brand2"><i>⚡</i> Grounded answers</span>
+                <span class="brand2"><i>🧠</i> Memory</span>
+                <span class="brand2"><i>⏱️</i> Chrono &lt;1s</span>
+                <span class="brand2"><i>🎙️</i> Echo voice</span>
+                <span class="brand2"><i>🛡️</i> No hallucinations</span>
+                <span class="brand2"><i>📧</i> Your SMTP</span>
+                <span class="brand2"><i>🔒</i> Local-first</span>
+                <span class="brand2"><i>📈</i> Revenue analytics</span>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <span>© NOVA — self-hosted AI agent platform · dark glass edition</span>
+    <span class="lock">🔒 Authorized access only. All actions audited.</span>
+</footer>
+
+<script>
+    fetch("/api/health").then(r => r.json()).then(function (h) {
+        var pill = document.getElementById("envPill");
+        if (h && h.ok) {
+            pill.textContent = "online · " + (h.environment || "unknown") + " · model " + (h.model || "?");
+            pill.className = "pill ok";
+        } else {
+            pill.textContent = "degraded";
+            pill.className = "pill bad";
+        }
+    }).catch(function () {
+        var pill = document.getElementById("envPill");
+        pill.textContent = "offline";
+        pill.className = "pill bad";
+    });
+    // duplicate marquee for seamless loop
+    document.querySelectorAll('.marquee-track').forEach(t=>{ if(!t.dataset.cloned){ t.dataset.cloned='1'; t.innerHTML+=t.innerHTML; }});
+</script>
+</body>
+</html>

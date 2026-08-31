@@ -1,0 +1,184 @@
+"use strict";
+
+/**
+ * ECHO — Text-to-speech.
+ * NOVA-side abstraction over the TTS sidecar (or local fallback).
+ * Supports multiple providers: Piper (local), ElevenLabs, OpenAI, etc.
+ */
+
+const crypto = require("../../lib/crypto");
+const db = require("../../db").get;
+const { normalizeLanguage } = require("./languages");
+
+const TTS_MODELS = {
+    piper: { name: "piper", provider: "piper", multilingual: true, streaming: true },
+    elevenlabs: { name: "elevenlabs", provider: "elevenlabs", multilingual: true, streaming: true },
+    openai: { name: "tts-1", provider: "openai-compatible", multilingual: true, streaming: true },
+    openai_hd: { name: "tts-1-hd", provider: "openai-compatible", multilingual: true, streaming: true },
+};
+
+const TTS_VOICES = {
+    // Piper voices (sample)
+    piper: {
+        en_US: ["amy", "ryan", "kathleen", "emma"],
+        en_GB: ["alan", "libby"],
+        de_DE: ["thorsten", "eva"],
+        fr_FR: ["gilles", "siwis"],
+        es_ES: ["carlfm", "davefx"],
+        fr_CA: ["gabrielle"],
+    },
+    // ElevenLabs voices (subset)
+    elevenlabs: {
+        rachel: { name: "Rachel", category: "female", language: "en" },
+        domi: { name: "Domi", category: "female", language: "en" },
+        bella: { name: "Bella", category: "female", language: "en" },
+        antoni: { name: "Antoni", category: "male", language: "en" },
+        elli: { name: "Elli", category: "female", language: "en" },
+        josh: { name: "Josh", category: "male", language: "en" },
+        arnold: { name: "Arnold", category: "male", language: "en" },
+        adam: { name: "Adam", category: "male", language: "en" },
+        sam: { name: "Sam", category: "male", language: "en" },
+    },
+};
+
+function ttsParams({ voice, model, language, speed, stability, similarityBoost, style } = {}) {
+    const lang = normalizeLanguage(language) || "en";
+    const m = typeof model === "string" ? model.trim().toLowerCase() : "piper";
+    const v = typeof voice === "string" ? voice : null;
+    return {
+        language: lang,
+        model: m,
+        voice: v,
+        speed: typeof speed === "number" ? Math.max(0.5, Math.min(2, speed)) : 1.0,
+        stability: typeof stability === "number" ? Math.max(0, Math.min(1, stability)) : 0.5,
+        similarityBoost: typeof similarityBoost === "number" ? Math.max(0, Math.min(1, similarityBoost)) : 0.75,
+        style: typeof style === "number" ? Math.max(0, Math.min(1, style)) : 0,
+    };
+}
+
+/**
+ * Stub TTS (no sidecar/provider configured). Returns a placeholder so the
+ * conversation can continue gracefully while TTS is being set up.
+ */
+function stubSynthesize({ businessId, text, params }) {
+    const synthId = `tts_${require("../../lib/crypto").randomHex(10)}`;
+    const textPreview = String(text || "").slice(0, 100);
+    return {
+        synthId,
+        text: textPreview,
+        audioUrl: null,
+        audioBase64: null,
+        durationMs: 0,
+        format: "mp3",
+        status: "pending_provider",
+        message: `TTS not configured — ${textPreview.length > 50 ? textPreview.slice(0, 47) + "..." : textPreview}`,
+        params,
+    };
+}
+
+/**
+ * Real sidecar/provider call (when TTS sidecar is running).
+ * POSTs text to the TTS sidecar HTTP. Caller is server/src/routes/tts.
+ */
+async function callSidecar({ sidecarUrl, text, params }) {
+    if (!sidecarUrl || !text) throw new Error("sidecarUrl and text required");
+    
+    const form = new FormData();
+    form.append("text", text);
+    if (params.voice) form.append("voice", params.voice);
+    if (params.model) form.append("model", params.model);
+    if (params.language) form.append("language", params.language);
+    if (params.speed !== undefined) form.append("speed", String(params.speed));
+    if (params.stability !== undefined) form.append("stability", String(params.stability));
+    if (params.similarityBoost !== undefined) form.append("similarity_boost", String(params.similarityBoost));
+    if (params.style !== undefined) form.append("style", String(params.style));
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    try {
+        const res = await fetch(`${sidecarUrl.replace(/\/$/, "")}/synthesize`, {
+            method: "POST",
+            body: form,
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `TTS sidecar error ${res.status}`);
+        return data; // { audioBase64, format, durationMs, sampleRate }
+    } finally {
+        clearTimeout(timeout);
+    }
+}
+
+/**
+ * Synthesize text to speech with automatic fallback.
+ */
+async function synthesize({ businessId, text, params: inputParams, config }) {
+    const textStr = String(text || "").slice(0, 5000);
+    if (!textStr.trim()) throw new Error("Text is required for synthesis");
+
+    const params = ttsParams(inputParams);
+    const lang = params.language || "en";
+    const model = params.model || "piper";
+
+    // Try sidecar first if configured
+    const sidecarUrl = config?.ttsSidecarUrl || process.env.NOVA_TTS_SIDECAR_URL;
+    if (sidecarUrl) {
+        try {
+            const result = await callSidecar({ sidecarUrl, text: textStr, params });
+            // Persist result
+            const crypto = require("../../lib/crypto");
+            const db = require("../../db").get();
+            const synthId = `tts_${crypto.randomHex(10)}`;
+            db().prepare(
+                "INSERT INTO tts_syntheses (synth_id, business_id, text, language, voice, model, audio_base64, format, duration_ms, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)"
+            ).run(crypto.randomId("tts"), businessId, textStr.slice(0, 100), lang, params.voice || "", model, result.audioBase64 || "", result.format || "mp3", result.durationMs || 0, Date.now());
+            return { ...result, synthId: `tts_${crypto.randomHex(10)}` };
+        } catch (e) {
+            // fall through to stub
+        }
+    }
+
+    // Fallback to stub
+    return stubSynthesize({ businessId: "unknown", text: textStr, params });
+}
+
+/** List available voices for a model/language. */
+function listVoices(model, language) {
+    const lang = normalizeLanguage(language) || "en";
+    if (model === "piper") {
+        const voices = TTS_VOICES.piper[`${language}_${language.toUpperCase()}`] || TTS_VOICES.piper[language] || [];
+        return voices.map(v => ({ id: v, name: v, language: language }));
+    }
+    if (model === "elevenlabs") {
+        return Object.entries(TTS_VOICES.elevenlabs).map(([id, v]) => ({ id, ...v }));
+    }
+    if (model === "openai" || model === "openai-compatible") {
+        return ["alloy", "echo", "fable", "onyx", "nova", "shimmer"].map(v => ({ id: v, name: v, language: "en" }));
+    }
+    return [];
+}
+
+/**
+ * High-level speak function for voice chat integration.
+ * Returns base64 audio for direct playback.
+ */
+async function speak({ businessId, text, language, voice }) {
+    const configService = require("../config/service");
+    const config = configService.getConfig(businessId);
+    const params = ttsParams({ voice, model: config.echo?.model || "piper", language });
+    const result = await synthesize({ businessId, text, params, config });
+    return result;
+}
+
+module.exports = {
+    TTS_MODELS,
+    TTS_VOICES,
+    ttsParams,
+    stubSynthesize,
+    callSidecar,
+    synthesize,
+    speak,
+    listVoices,
+    normalizeLanguage,
+};

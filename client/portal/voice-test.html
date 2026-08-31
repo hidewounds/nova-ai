@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOVA Voice Test</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, sans-serif; }
+        body { max-width: 800px; margin: 2rem auto; padding: 1rem; }
+        .card { border: 1px solid #ddd; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; }
+        button { padding: 0.75rem 1.5rem; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; margin: 0.25rem; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-secondary { background: #6b7280; color: white; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .status { padding: 0.5rem; border-radius: 4px; margin: 0.5rem 0; font-weight: 500; }
+        .status.recording { background: #dcfce7; color: #166534; }
+        .status.speaking { background: #fef3c7; color: #92400e; }
+        .status.connecting { background: #dbeafe; color: #1e40af; }
+        .status.error { background: #fee2e2; color: #991b1b; }
+        .status.stopped { background: #f3f4f6; color: #374151; }
+        textarea { width: 100%; min-height: 150px; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-family: monospace; }
+        .transcript-box { background: #f9fafb; border: 1px solid #e5e7eb; }
+        .log { font-size: 0.85rem; color: #6b7280; font-family: monospace; max-height: 200px; overflow-y: auto; }
+        .row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+        select, input { padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+        h2 { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <h1>🎙️ NOVA Voice Client Test</h1>
+
+    <div class="card">
+        <h2>Connection</h2>
+        <div class="row">
+            <label>Sidecar WS URL:
+                <input type="text" id="sidecarUrl" value="ws://127.0.0.1:8765/ws/transcribe" style="flex: 1; min-width: 300px;">
+            </label>
+            <label>TTS WS URL:
+                <input type="text" id="ttsUrl" value="ws://127.0.0.1:8765/ws/tts" style="flex: 1; min-width: 300px;">
+            </label>
+        </div>
+        <div class="row">
+            <label>Language:
+                <select id="language">
+                    <option value="en">English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="zh">Chinese</option>
+                    <option value="ja">Japanese</option>
+                    <option value="auto">Auto-detect</option>
+                </select>
+            </label>
+            <label>Initial Prompt:
+                <input type="text" id="prompt" placeholder="Optional context for transcription" style="flex: 1;">
+            </label>
+        </div>
+        <div class="row">
+            <button class="btn-primary" id="btnConnect">Connect</button>
+            <button class="btn-secondary" id="btnDisconnect" disabled>Disconnect</button>
+        </div>
+        <div id="status" class="status stopped">Status: Stopped</div>
+    </div>
+
+    <div class="card">
+        <h2>Recording</h2>
+        <div class="row">
+            <button class="btn-primary" id="btnStart" disabled>Start Recording</button>
+            <button class="btn-danger" id="btnStop" disabled>Stop Recording</button>
+            <button class="btn-secondary" id="btnFlush" disabled>Flush</button>
+        </div>
+        <div id="recStatus" class="status stopped">Not recording</div>
+        <textarea id="transcript" class="transcript-box" placeholder="Transcripts will appear here..." readonly></textarea>
+    </div>
+
+    <div class="card">
+        <h2>Text-to-Speech (Barge-in Test)</h2>
+        <div class="row">
+            <input type="text" id="ttsText" value="Hello! This is NOVA speaking. You can interrupt me at any time by starting to speak." style="flex: 1; min-width: 300px;">
+            <button class="btn-primary" id="btnSpeak" disabled>Speak</button>
+            <button class="btn-danger" id="btnInterrupt" disabled>Interrupt (Barge-in)</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Event Log</h2>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script src="nova-voice-client.js"></script>
+    <script>
+        const logEl = document.getElementById("log");
+        const transcriptEl = document.getElementById("transcript");
+        const statusEl = document.getElementById("status");
+        const recStatusEl = document.getElementById("recStatus");
+
+        function log(msg, type = "info") {
+            const time = new Date().toLocaleTimeString();
+            const line = document.createElement("div");
+            line.textContent = `[${time}] ${msg}`;
+            if (type === "error") line.style.color = "#dc2626";
+            if (type === "success") line.style.color = "#16a34a";
+            logEl.appendChild(line);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        let voiceClient = null;
+
+        document.getElementById("btnConnect").onclick = async () => {
+            const sidecarUrl = document.getElementById("sidecarUrl").value;
+            const ttsUrl = document.getElementById("ttsUrl").value;
+            const language = document.getElementById("language").value;
+            const prompt = document.getElementById("prompt").value;
+
+            try {
+                voiceClient = new NovaVoiceClient({
+                    sidecarWsUrl: sidecarUrl,
+                    ttsWsUrl: ttsUrl,
+                    language: language === "auto" ? undefined : language,
+                    prompt,
+                    wordTimestamps: true,
+                    onTranscript: (data) => {
+                        if (data.final) {
+                            transcriptEl.value += data.text + "\n\n";
+                            log(`Final: "${data.text}" (${data.language})`, "success");
+                        } else {
+                            transcriptEl.value = transcriptEl.value.replace(/[^\n]*$/, "") + data.text + " ▊";
+                        }
+                    },
+                    onError: (err) => {
+                        log(`Error: ${err.message}`, "error");
+                    },
+                    onStateChange: (state) => {
+                        statusEl.textContent = `Status: ${state}`;
+                        statusEl.className = `status ${state}`;
+                        log(`State: ${state}`);
+                        updateButtons(state);
+                    },
+                });
+
+                await voiceClient.start();
+                log("Voice client started", "success");
+            } catch (err) {
+                log(`Failed to start: ${err.message}`, "error");
+            }
+        };
+
+        document.getElementById("btnDisconnect").onclick = () => {
+            if (voiceClient) {
+                voiceClient.destroy();
+                voiceClient = null;
+                log("Disconnected");
+            }
+        };
+
+        document.getElementById("btnStart").onclick = () => {
+            // Already started on connect
+        };
+
+        document.getElementById("btnStop").onclick = async () => {
+            if (voiceClient) {
+                voiceClient.flush();
+                await voiceClient.stop();
+                const final = voiceClient.getFinalTranscript();
+                if (final) {
+                    transcriptEl.value += "\n\n--- FINAL ---\n" + final;
+                }
+                log("Recording stopped", "success");
+            }
+        };
+
+        document.getElementById("btnFlush").onclick = () => {
+            if (voiceClient) voiceClient.flush();
+        };
+
+        document.getElementById("btnSpeak").onclick = async () => {
+            const text = document.getElementById("ttsText").value;
+            if (!text.trim()) return;
+            try {
+                await voiceClient.speak(text);
+                log("TTS completed", "success");
+            } catch (err) {
+                log(`TTS error: ${err.message}`, "error");
+            }
+        };
+
+        document.getElementById("btnInterrupt").onclick = () => {
+            if (voiceClient) {
+                voiceClient.interruptTTS();
+                log("TTS interrupted (barge-in)", "success");
+            }
+        };
+
+        function updateButtons(state) {
+            const isConnected = voiceClient && state !== "stopped" && state !== "error";
+            document.getElementById("btnConnect").disabled = isConnected;
+            document.getElementById("btnDisconnect").disabled = !isConnected;
+            document.getElementById("btnStart").disabled = !isConnected || state === "recording";
+            document.getElementById("btnStop").disabled = !isConnected || state !== "recording";
+            document.getElementById("btnFlush").disabled = !isConnected || state !== "recording";
+            document.getElementById("btnSpeak").disabled = !isConnected;
+            document.getElementById("btnInterrupt").disabled = !isConnected;
+        }
+    </script>
+</body>
+</html>

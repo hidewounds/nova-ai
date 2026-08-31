@@ -1,0 +1,259 @@
+{
+  "exportedAt": "2026-08-27T07:04:06.262Z",
+  "business": {
+    "id": 2,
+    "business_id": "purge16days",
+    "business_name": "Purge16Days",
+    "integration_key": "nova_pk_6e9d1ebc8eb1cbfab8df43a04626b8cdce1a32cc41b97c291a05a34dab07b21b",
+    "active": 0,
+    "created_at": 1787814246236,
+    "updated_at": 1786431846250,
+    "plan": "launch",
+    "deactivated_at": 1786431846250
+  },
+  "config": {
+    "version": 1,
+    "assistant": {
+      "name": "NOVA",
+      "role": "general_assistant",
+      "roles": [
+        "general_assistant"
+      ],
+      "businessDescription": "",
+      "instructions": "",
+      "personality": "",
+      "tone": "",
+      "welcomeMessage": "",
+      "fallbackMessage": "I don't have verified information on that — would you like me to connect you to a human at the business?"
+    },
+    "model": {
+      "provider": "ollama",
+      "model": "",
+      "baseUrl": "",
+      "apiKey": "",
+      "temperature": 0.7,
+      "timeoutMs": 120000
+    },
+    "memory": {
+      "enabled": true,
+      "maxMemories": 50,
+      "allowExplicitRemember": true,
+      "stableFields": [
+        {
+          "key": "name",
+          "category": "identity",
+          "description": "The customer's name.",
+          "keywords": [
+            "name",
+            "called"
+          ]
+        },
+        {
+          "key": "location",
+          "category": "identity",
+          "description": "The customer's general location.",
+          "keywords": [
+            "location",
+            "city",
+            "country",
+            "live",
+            "based"
+          ]
+        },
+        {
+          "key": "occupation",
+          "category": "fact",
+          "description": "The customer's job or occupation.",
+          "keywords": [
+            "job",
+            "occupation",
+            "work as"
+          ]
+        },
+        {
+          "key": "shoe_size",
+          "category": "preference",
+          "description": "The customer's shoe size.",
+          "keywords": [
+            "shoe size"
+          ]
+        },
+        {
+          "key": "clothing_size",
+          "category": "preference",
+          "description": "The customer's clothing size.",
+          "keywords": [
+            "clothing size",
+            "shirt size",
+            "pant size",
+            "clothes size"
+          ]
+        },
+        {
+          "key": "shoe_preference",
+          "category": "preference",
+          "description": "The customer's shoe preferences.",
+          "keywords": [
+            "shoe preference",
+            "shoes",
+            "shoe color",
+            "shoe style"
+          ]
+        }
+      ]
+    },
+    "behavior": {
+      "enabled": true,
+      "maxEvents": 100,
+      "defaultRetentionDays": 30,
+      "events": {
+        "page_view": {
+          "enabled": true,
+          "retentionDays": 7
+        },
+        "product_view": {
+          "enabled": true,
+          "retentionDays": 30
+        },
+        "search": {
+          "enabled": true,
+          "retentionDays": 14
+        },
+        "category_view": {
+          "enabled": true,
+          "retentionDays": 14
+        },
+        "cart": {
+          "enabled": true,
+          "retentionDays": 7
+        },
+        "wishlist": {
+          "enabled": true,
+          "retentionDays": 30
+        },
+        "purchase": {
+          "enabled": true,
+          "retentionDays": 365
+        }
+      }
+    },
+    "context": {
+      "maxMemories": 5,
+      "maxBehavior": 10,
+      "maxKnowledge": 6,
+      "maxConversationMessages": 20,
+      "minimumMemoryScore": 1,
+      "minimumBehaviorScore": 1,
+      "maxContextTokens": 6000
+    },
+    "features": {
+      "conversations": true,
+      "knowledge": true,
+      "capabilities": {
+        "booking.availability": true,
+        "booking.create": true,
+        "booking.list": true,
+        "chrono.schedule.get": true,
+        "chrono.schedule.set": true,
+        "echo.transcribe": true,
+        "call.handoff": true
+      }
+    },
+    "chrono": {
+      "timezone": "UTC",
+      "slotDuration": 60,
+      "bufferMinutes": 0,
+      "minNoticeMinutes": 0,
+      "maxDaysAhead": 60,
+      "maxSeatsPerSlot": 1,
+      "hosts": [],
+      "weekly": {
+        "monday": [
+          {
+            "start": "09:00",
+            "end": "17:00"
+          }
+        ],
+        "tuesday": [
+          {
+            "start": "09:00",
+            "end": "17:00"
+          }
+        ],
+        "wednesday": [
+          {
+            "start": "09:00",
+            "end": "17:00"
+          }
+        ],
+        "thursday": [
+          {
+            "start": "09:00",
+            "end": "17:00"
+          }
+        ],
+        "friday": [
+          {
+            "start": "09:00",
+            "end": "17:00"
+          }
+        ],
+        "saturday": [],
+        "sunday": []
+      }
+    },
+    "echo": {
+      "enabled": false,
+      "defaultLanguage": "en",
+      "model": "turbo",
+      "sidecarUrl": "",
+      "wordTimestamps": false,
+      "initialPrompt": ""
+    },
+    "addons": {
+      "voice_channel": false,
+      "multilanguage": false
+    },
+    "call": {
+      "greetingTemplate": "Hello, thank you for calling {businessName}. You're speaking with {agentName}, the AI assistant. I'm here to help with your queries — what can I do for you today?",
+      "handoffPhone": "",
+      "handoffEmail": ""
+    },
+    "security": {
+      "widgetEnabled": true
+    },
+    "__businessId": null
+  },
+  "knowledge": [],
+  "customers": [],
+  "memories": [],
+  "behavioral_events": [],
+  "conversations": [],
+  "conversation_messages": [],
+  "bookings": [],
+  "portal_settings": null,
+  "portal_users": [],
+  "addons": [],
+  "audit_log": [
+    {
+      "id": 5,
+      "business_id": "purge16days",
+      "actor_type": "admin",
+      "actor_id": "adm_8f65aa59fe0b1e5dcb23",
+      "action": "business.updated",
+      "detail_json": "{\"fields\":[\"active\"]}",
+      "ip": "::ffff:127.0.0.1",
+      "created_at": 1787814246247
+    },
+    {
+      "id": 4,
+      "business_id": "purge16days",
+      "actor_type": "admin",
+      "actor_id": "adm_8f65aa59fe0b1e5dcb23",
+      "action": "business.created",
+      "detail_json": "{\"businessName\":\"Purge16Days\"}",
+      "ip": "::ffff:127.0.0.1",
+      "created_at": 1787814246238
+    }
+  ]
+}
