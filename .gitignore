@@ -1,0 +1,11 @@
+﻿node_modules/
+database/*.db
+database/*.db-shm
+database/*.db-wal
+logs/
+.env
+.env.backup.*
+training/checkpoint-*.json
+echo/__pycache__
+echo/.venv
+.vercel
