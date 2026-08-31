@@ -229,11 +229,7 @@
     }
 
     async function loadConfig() {
-        // prevent concurrent duplicate fetches
-        if (configLoaded && hasWelcomed) {
-            // config already fetched and welcome already shown — no need to refetch
-            return;
-        }
+        if (configLoaded && hasWelcomed) return;
         try {
             var data = await api("/api/v1/widget/config");
             if (data.config && data.config.assistantName) {
@@ -243,16 +239,35 @@
             if (data.config) {
                 voiceEnabled = Boolean(data.config.voiceEnabled || data.config.addons?.voice_channel);
                 multilanguageEnabled = Boolean(data.config.multilanguageEnabled || data.config.addons?.multilanguage);
-                // show mic if either addon enabled and browser supports it
                 if ((voiceEnabled || multilanguageEnabled) && navigator.mediaDevices && window.MediaRecorder) {
                     if (micEl) micEl.style.display = "inline-block";
                 }
-                // availability is always available via chrono
+                // auto guide on load if available (human-like, no user ask needed)
+                if(data.config.guideAvailable && window.NOVA_GUIDE){
+                    setTimeout(function(){
+                        if(widget.classList.contains("open")) return;
+                        api("/api/v1/widget/guide",{method:"GET"}).then(function(gd){
+                            if(gd && gd.guide && gd.guide.steps && gd.guide.steps.length && !hasWelcomed){
+                                // show subtle hint then auto-start after open
+                                addMessage("assistant", "👋 I'm NOVA — want a quick 30s tour? I'll point at things. Say 'guide me' or click Next.");
+                                messages.push({role:"assistant", content:"Want a quick tour? Say 'guide me'"});
+                                hasWelcomed=true;
+                            }
+                        }).catch(function(){});
+                    }, 2500);
+                } else if(window.NOVA_GUIDE){
+                    // even if no guide yet, still offer generic tour (so guide always works)
+                    setTimeout(function(){
+                        if(!hasWelcomed && !widget.classList.contains("open")){
+                            addMessage("assistant", "👋 Hi — I'm NOVA. I can guide you around this site and answer any question. Say 'guide me'.");
+                            messages.push({role:"assistant", content:"Hi — I can guide you"});
+                            hasWelcomed=true;
+                        }
+                    }, 3000);
+                }
             }
             configLoaded = true;
-            // idempotent welcome: only once per page load, and only if no messages yet
             if (data.config && data.config.welcomeMessage && !hasWelcomed) {
-                // also guard against DOM already containing welcome (e.g. from proactive)
                 var alreadyHasWelcome = false;
                 if (messagesEl) {
                     for (var i = 0; i < messagesEl.children.length; i++) {
@@ -302,33 +317,35 @@
         var t = String(text||"").toLowerCase();
         return /guide me|show.*around|tour|how (does|to use) this site|website guide|operate.*site|full operation/.test(t);
     }
+    function genericGuideSteps(){
+        return [
+            { id:"welcome", title:"Welcome — I'll guide you", selector:"body", description:"Hi, I'm NOVA. I'll show you around in 60 seconds.", position:"center" },
+            { id:"explore", title:"Explore", selector:"nav, header", description:"Browse what's here — I'll explain as we go.", position:"bottom" },
+            { id:"talk", title:"Ask me anything on NOVA", selector:"#nova-widget-button", description:"Guide done. Ask any question — I still handle basics like support, sales, bookings.", position:"left" }
+        ];
+    }
     async function sendMessage() {
         var text = (inputEl.value || "").trim();
         if (!text || busy) return;
 
-        // intercept guide intent locally: fetch guide and start overlay immediately (human-like)
         if(maybeGuideIntent(text)){
-            // show as user first
             inputEl.value = "";
             addMessage("user", text);
             messages.push({ role: "user", content: text });
-            // try guide overlay
             try {
                 var gdata = await api("/api/v1/widget/guide", { method: "GET" });
-                if(gdata && gdata.guide && gdata.guide.steps && gdata.guide.steps.length){
-                    if(window.NOVA_GUIDE && window.NOVA_GUIDE.start){
-                        window.NOVA_GUIDE.start(gdata.guide.steps, { onStep: function(){} });
-                        addMessage("assistant", "I'll guide you in "+gdata.guide.steps.length+" short steps — I'll point at each thing. Follow the highlight. At the end, ask me any question on NOVA.");
-                        messages.push({ role: "assistant", content: "I'll guide you in "+gdata.guide.steps.length+" short steps — I'll point at each thing." });
-                        return;
-                    }
-                } else {
-                    addMessage("assistant", "I haven't learned this site yet — I'll need the owner to link the website in Portal → Site Analyze, then I can guide and update knowledge like a human.");
-                    messages.push({ role: "assistant", content: "I haven't learned this site yet." });
+                var steps = (gdata && gdata.guide && gdata.guide.steps && gdata.guide.steps.length) ? gdata.guide.steps : genericGuideSteps();
+                if(window.NOVA_GUIDE && window.NOVA_GUIDE.start){
+                    window.NOVA_GUIDE.start(steps, { onStep: function(){}});
+                    addMessage("assistant", "I'll guide you in "+steps.length+" short steps — I'll point at each thing. Follow the highlight. At the end, ask me any question on NOVA.");
+                    messages.push({ role: "assistant", content: "I'll guide you in "+steps.length+" short steps." });
                     return;
                 }
             } catch(e){
-                // fall through to normal chat
+                if(window.NOVA_GUIDE) window.NOVA_GUIDE.start(genericGuideSteps());
+                addMessage("assistant", "I'll guide you — following the highlight.");
+                messages.push({ role: "assistant", content: "I'll guide you" });
+                return;
             }
         }
 

@@ -45,7 +45,7 @@ function isBusinessRelated(query, knowledge, config) {
     // curated distinctive keywords for NOVA platform — avoid generic stop-words that cause false positives
     const distinctiveKeywords = [
         "nova","platform","subscription","launch","growth","scale","unlimited",
-        "pricing","price","plan","feature","role","booking","appointment","widget","chrono","echo",
+        "pricing","price","plan","feature","role","booking","appointment","widget","chrono","echo","guide","tour","show me","operate","site","website","sell","selling","buy","buying","product","products","catalog","shop","store","offer","stock","have","available",
         "nimbus","aerobuds","sport pulse","consultation","demo","billing","checkout","schedule","availability","available","slot","slots","book",
         "account","transfer","refund","enterprise","custom","human"
     ];
@@ -54,7 +54,8 @@ function isBusinessRelated(query, knowledge, config) {
     }
     // capability questions are business-related ("what can you do" is about the agent, not general)
     const capabilityPhrases = [
-        "what can you do","what do you do","how can you help","capabilities","capability","what are your features","what do you offer","how do you work","widget work","help me with nova","support for nova","what are you","who are you"
+        "what can you do","what do you do","how can you help","capabilities","capability","what are your features","what do you offer","how do you work","widget work","help me with nova","support for nova","what are you","who are you",
+        "guide me","show me around","tour","how does this site work","how to use this site","website guide","full operation"
     ];
     for (const phrase of capabilityPhrases) {
         if (q.includes(phrase)) return true;

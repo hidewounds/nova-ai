@@ -228,11 +228,20 @@ const CAPABILITIES = {
             const guideStore = require("../guide/store");
             let guide = guideStore.getGuide(businessId);
             if (!guide && params.siteUrl) {
-                const { analyzeSite } = require("../site/analyzer");
-                const res = await analyzeSite({ businessId, siteUrl: params.siteUrl });
-                guide = res.guide;
-            } else if (!guide) {
-                return { status: "no_guide", message: "No guide yet. Link your website in Portal → Settings or call site.analyze first. I'll guide as soon as I learn your site." };
+                try {
+                    const { analyzeSite } = require("../site/analyzer");
+                    const res = await analyzeSite({ businessId, siteUrl: params.siteUrl });
+                    guide = res.guide;
+                } catch {}
+            }
+            if (!guide) {
+                // generic fallback so guide always works even before site analyze (human-like, no training needed)
+                const steps = [
+                    { id:"welcome", title:"Welcome — I'll guide you", selector:"body", description:"Hi, I'm NOVA. I'll show you around in 60 seconds.", position:"center" },
+                    { id:"explore", title:"Explore", selector:"nav, header", description:"Browse what's here — I'll explain as we go.", position:"bottom" },
+                    { id:"ask", title:"Ask me anything on NOVA", selector:"#nova-widget-button", description:"Guide done. Ask any question — I still handle basics like support, sales, bookings.", position:"left" }
+                ];
+                return { status: "ok", guide: { steps, title: "Quick tour", siteUrl: params.siteUrl || "", siteType: "general", products: [] }, message: "I'll guide you in 3 short steps — I'll point at each thing. At the end, ask me any question on NOVA." };
             }
             return { status: "ok", guide: { steps: guide.steps, title: guide.title, siteUrl: guide.siteUrl, siteType: guide.siteType, products: guide.products.slice(0,3) }, message: `I'll guide you in ${guide.steps.length} steps — I'll point at each thing. At the end, ask me any question on NOVA.` };
         },

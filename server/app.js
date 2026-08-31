@@ -29,6 +29,30 @@ const { authenticateIntegration } = require("./src/auth/integration");
  */
 function createApp(options = {}) {
     db.init({ dbPath: options.dbPath });
+    // Seed demo business for widget key so widget never 401 on fresh Vercel /tmp DB
+    try {
+        const conn = require("./src/db/connection");
+        const bizCount = conn.get().prepare("SELECT COUNT(*) as n FROM businesses").get()?.n || 0;
+        if (bizCount === 0) {
+            const crypto = require("./src/lib/crypto");
+            const now = Date.now();
+            const demoId = "nova_web_demo";
+            const demoKey = "nova_pk_40d32c478e27559616acfd7827347d437b1c207d3d9f1e1c0375759d81bbb6da";
+            const demoName = "NOVA Web Demo";
+            try {
+                conn.get().prepare("INSERT OR IGNORE INTO businesses (business_id, business_name, integration_key, active, plan, created_at, updated_at) VALUES (?, ?, ?, 1, 'unlimited', ?, ?)").run(demoId, demoName, demoKey, now, now);
+                const cfg = require("./src/core/config/service");
+                // ensure config exists
+                const existing = conn.get().prepare("SELECT 1 FROM business_configs WHERE business_id=?").get(demoId);
+                if (!existing) {
+                    const normalized = cfg.normalizeConfig({}, { plan: "unlimited", bypassLimit: true });
+                    conn.get().prepare("INSERT OR IGNORE INTO business_configs (business_id, config_json, created_at, updated_at) VALUES (?, ?, ?, ?)").run(demoId, JSON.stringify(normalized), now, now);
+                }
+                // ensure chrono schedule seeded via migration already, but ensure
+                require("./src/db").get();
+            } catch (e) { /* ignore seed errors */ }
+        }
+    } catch {}
 
     const app = express();
     app.disable("x-powered-by");
