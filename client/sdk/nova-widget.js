@@ -242,29 +242,39 @@
                 if ((voiceEnabled || multilanguageEnabled) && navigator.mediaDevices && window.MediaRecorder) {
                     if (micEl) micEl.style.display = "inline-block";
                 }
-                // auto guide on load if available (human-like, no user ask needed)
-                if(data.config.guideAvailable && window.NOVA_GUIDE){
-                    setTimeout(function(){
-                        if(widget.classList.contains("open")) return;
-                        api("/api/v1/widget/guide",{method:"GET"}).then(function(gd){
-                            if(gd && gd.guide && gd.guide.steps && gd.guide.steps.length && !hasWelcomed){
-                                // show subtle hint then auto-start after open
-                                addMessage("assistant", "👋 I'm NOVA — want a quick 30s tour? I'll point at things. Say 'guide me' or click Next.");
-                                messages.push({role:"assistant", content:"Want a quick tour? Say 'guide me'"});
-                                hasWelcomed=true;
-                            }
-                        }).catch(function(){});
-                    }, 2500);
-                } else if(window.NOVA_GUIDE){
-                    // even if no guide yet, still offer generic tour (so guide always works)
-                    setTimeout(function(){
-                        if(!hasWelcomed && !widget.classList.contains("open")){
-                            addMessage("assistant", "👋 Hi — I'm NOVA. I can guide you around this site and answer any question. Say 'guide me'.");
-                            messages.push({role:"assistant", content:"Hi — I can guide you"});
-                            hasWelcomed=true;
-                        }
-                    }, 3000);
-                }
+                // auto guide on FIRST visit — starts without typing, points at real elements
+                try {
+                    var seen = null; try { seen = localStorage.getItem("nova_guide_seen"); } catch {}
+                    if(!seen && window.NOVA_GUIDE){
+                        setTimeout(function(){
+                            // fetch guide, fallback to generic 3-step
+                            api("/api/v1/widget/guide",{method:"GET"}).then(function(gd){
+                                var steps = (gd && gd.guide && gd.guide.steps && gd.guide.steps.length) ? gd.guide.steps : [
+                                    { id:"welcome", title:"Welcome — I'll guide you", selector:"body", description:"Hi, I'm NOVA. I'll show you around in 60 seconds.", position:"center" },
+                                    { id:"explore", title:"Explore", selector:"nav, header", description:"Browse what's here — I'll explain as we go.", position:"bottom" },
+                                    { id:"ask", title:"Ask me anything on NOVA", selector:"#nova-widget-button", description:"Tour done. Ask any question — I handle basics, bookings and voice.", position:"left" }
+                                ];
+                                // auto-start overlay without typing
+                                if(window.NOVA_GUIDE && window.NOVA_GUIDE.start){
+                                    window.NOVA_GUIDE.start(steps, { onStep: function(){}});
+                                    try { localStorage.setItem("nova_guide_seen","1"); } catch {}
+                                    // also add chat hint
+                                    addMessage("assistant", "👋 I'm showing you around — follow the highlight. At the end, ask me any question on NOVA.");
+                                    messages.push({role:"assistant", content:"Showing tour — follow highlight"});
+                                    hasWelcomed=true;
+                                }
+                            }).catch(function(){
+                                if(window.NOVA_GUIDE){
+                                    window.NOVA_GUIDE.start([
+                                        { id:"welcome", title:"Welcome — I'll guide you", selector:"body", description:"Hi, I'm NOVA. I'll show you around in 60 seconds.", position:"center" },
+                                        { id:"ask", title:"Ask me anything on NOVA", selector:"#nova-widget-button", description:"Tour done. Ask any question.", position:"left" }
+                                    ]);
+                                    try { localStorage.setItem("nova_guide_seen","1"); } catch {}
+                                }
+                            });
+                        }, 1800);
+                    }
+                } catch {}
             }
             configLoaded = true;
             if (data.config && data.config.welcomeMessage && !hasWelcomed) {
