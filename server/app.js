@@ -130,6 +130,9 @@ function createApp(options = {}) {
     app.use(validateRequestSize);
     app.use(promptInjectionGuard);
 
+    // Favicon - prevent 404 noise in logs
+    app.get("/favicon.ico", (req, res) => res.status(204).end());
+
     // --- health -----------------------------------------------------------------
     app.get("/api/health", (req, res) => {
         res.json({
