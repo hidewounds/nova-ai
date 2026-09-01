@@ -1,185 +1,156 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NOVA Platform — Admin</title>
-    <link rel="stylesheet" href="/admin/admin.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NOVA — Admin Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/admin/admin.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%238b5cf6'/><text x='50' y='62' font-size='50' text-anchor='middle' fill='white' font-family='Arial' font-weight='700'>N</text></svg>">
 </head>
 <body>
-    <!-- AUTH VIEW — centered, platform-style with subtle branding -->
-    <div id="authView" class="auth-wrap">
-        <div class="auth-card">
-            <div class="brand">NOVA<span>Platform</span><em>Admin</em></div>
-            <p class="muted" style="margin:6px 0 18px; font-size:13px; line-height:1.5">Sign in to manage tenants, agent brain, knowledge & integrations. Dark glass theme.</p>
-            <h2 id="authTitle">Sign in</h2>
-            <form id="loginForm">
-                <label>Email
-                    <input type="email" id="authEmail" autocomplete="username" required placeholder="admin@nova.ai">
-                </label>
-                <label>Password
-                    <input type="password" id="authPassword" autocomplete="current-password" required placeholder="••••••••">
-                </label>
-                <button type="submit" class="btn primary wide">Sign in</button>
-                <p id="authError" class="error"></p>
-                <p class="switch">No account? <button type="button" id="showRegister" class="linklike">Create one</button></p>
-            </form>
-            <form id="registerForm" class="hidden">
-                <label>Name
-                    <input type="text" id="regName" autocomplete="name" placeholder="Ada Lovelace">
-                </label>
-                <label>Email
-                    <input type="email" id="regEmail" autocomplete="email" required placeholder="ada@nova.ai">
-                </label>
-                <label>Password (min 8 characters)
-                    <input type="password" id="regPassword" minlength="8" autocomplete="new-password" required placeholder="••••••••">
-                </label>
-                <p class="hint">The first account created becomes a super admin — platform owner.</p>
-                <button type="submit" class="btn primary wide">Create account</button>
-                <p id="regError" class="error"></p>
-                <p class="switch">Have an account? <button type="button" id="showLogin" class="linklike">Sign in</button></p>
-            </form>
-        </div>
+<!-- AUTH -->
+<div id="authView" class="auth-layout">
+  <div class="auth-side">
+    <div class="auth-brand">
+      <div class="logo">N</div>
+      <div>
+        <div class="brand-name">NOVA</div>
+        <div class="brand-sub">Admin Console</div>
+      </div>
     </div>
-
-    <!-- DASHBOARD VIEW — OpenAI Platform layout: fixed sidebar + main -->
-    <div id="dashView" class="hidden">
-        <div class="platform">
-            <!-- Sidebar -->
-            <aside class="sidebar" id="sidebar" aria-label="Admin navigation">
-                <div class="sidebar-head">
-                    <div class="brand small">NOVA<span>Platform</span></div>
-                    <button class="icon-btn" id="sidebarClose" aria-label="Close sidebar">✕</button>
-                </div>
-
-                <div class="org-switcher">
-                    <label class="nav-group-title" style="margin:0 0 6px">Organization</label>
-                    <select id="businessSelect" aria-label="Select business"></select>
-                    <button id="newBusinessBtn" class="btn ghost small wide" style="margin-top:8px">+ New business</button>
-                </div>
-
-                <nav class="sidenav" id="tabs" role="tablist" aria-label="Admin sections">
-                    <div class="nav-group">
-                        <div class="nav-group-title">PLATFORM</div>
-                        <button data-tab="overview" class="nav-item active" role="tab" aria-selected="true" tabindex="0">
-                            <span class="nav-ic">◉</span> Overview
-                        </button>
-                        <button data-tab="agent" class="nav-item" role="tab" aria-selected="false" tabindex="-1">
-                            <span class="nav-ic">⬢</span> Agent
-                        </button>
-                        <button data-tab="custom" class="nav-item" role="tab" aria-selected="false" tabindex="-1">
-                            <span class="nav-ic">✦</span> Custom Behaviour
-                        </button>
-                    </div>
-                    <div class="nav-group">
-                        <div class="nav-group-title">DATA</div>
-                        <button data-tab="memory" class="nav-item" role="tab" aria-selected="false" tabindex="-1">
-                            <span class="nav-ic">◎</span> Memory
-                        </button>
-                        <button data-tab="behavior" class="nav-item" role="tab" aria-selected="false" tabindex="-1">
-                            <span class="nav-ic">◐</span> Behavior
-                        </button>
-                        <button data-tab="knowledge" class="nav-item" role="tab" aria-selected="false" tabindex="-1">
-                            <span class="nav-ic">▭</span> Knowledge
-                        </button>
-                        <button data-tab="customers" class="nav-item" role="tab" aria-selected="false" tabindex="-1">
-                            <span class="nav-ic">◯</span> Customers
-                        </button>
-                    </div>
-                    <div class="nav-group">
-                        <div class="nav-group-title">OPERATIONS</div>
-                        <button data-tab="integration" class="nav-item" role="tab" aria-selected="false" tabindex="-1">
-                            <span class="nav-ic">⧉</span> Integration
-                        </button>
-                        <button data-tab="audit" class="nav-item" role="tab" aria-selected="false" tabindex="-1">
-                            <span class="nav-ic">≡</span> Audit
-                        </button>
-                    </div>
-                </nav>
-
-                <div class="sidebar-foot">
-                    <div class="who">
-                        <div id="whoami" class="muted" style="font-size:12.5px; font-family:'JetBrains Mono',monospace; word-break:break-all"></div>
-                        <div class="muted" style="font-size:11px; margin-top:2px">Admin · <span style="color:var(--accent2)">Dark Glass</span></div>
-                    </div>
-                    <button id="logoutBtn" class="btn ghost small wide">Log out</button>
-                </div>
-            </aside>
-
-            <!-- Main -->
-            <div class="main">
-                <header class="main-header">
-                    <button class="icon-btn" id="sidebarOpen" aria-label="Open sidebar">☰</button>
-                    <div class="crumbs" id="crumbs">
-                        <span class="crumb">Businesses</span>
-                        <span class="crumb sep">/</span>
-                        <span class="crumb strong" id="crumbBiz">—</span>
-                        <span class="crumb sep">/</span>
-                        <span class="crumb" id="crumbTab">Overview</span>
-                    </div>
-                    <span class="spacer"></span>
-                    <div class="header-actions">
-                        <span class="badge on" style="font-size:10.5px; padding:5px 9px">NOVA Platform</span>
-                        <span class="muted" style="font-size:12px; font-family:'JetBrains Mono',monospace">v1.0 • dark glass</span>
-                    </div>
-                </header>
-
-                <main class="content">
-                    <div class="page-head">
-                        <h1 id="pageTitle">Overview</h1>
-                        <p class="muted" id="pageDesc" style="margin:6px 0 0; max-width:720px; line-height:1.5">Tenant health, usage, and unified brain status — OpenAI Platform style with dark glass depth.</p>
-                    </div>
-
-                    <section id="tab-overview" class="tabpane active"></section>
-                    <section id="tab-agent" class="tabpane"></section>
-                    <section id="tab-custom" class="tabpane"></section>
-                    <section id="tab-memory" class="tabpane"></section>
-                    <section id="tab-behavior" class="tabpane"></section>
-                    <section id="tab-knowledge" class="tabpane"></section>
-                    <section id="tab-customers" class="tabpane"></section>
-                    <section id="tab-integration" class="tabpane"></section>
-                    <section id="tab-audit" class="tabpane"></section>
-                </main>
-            </div>
-        </div>
+    <div class="auth-hero">
+      <h1>Operate your AI platform with confidence.</h1>
+      <p>One console to provision tenants, shape the Unified Brain, and ship knowledge — no code changes, full audit.</p>
+      <div class="hero-stats">
+        <div><b>6</b><span>Learned patterns</span></div>
+        <div><b>∞</b><span>Scale</span></div>
+        <div><b>&lt;1s</b><span>Live updates</span></div>
+      </div>
     </div>
+    <div class="auth-foot">© 2026 NOVA Platform • Dark glass, enterprise-grade</div>
+  </div>
+  <div class="auth-main">
+    <div class="auth-card">
+      <div class="card-head">
+        <h2 id="authTitle">Welcome back</h2>
+        <p class="muted">Sign in to manage businesses, brain, and integrations.</p>
+      </div>
+      <form id="loginForm" class="form">
+        <label for="authEmail">Work email
+          <input type="email" id="authEmail" autocomplete="username" required placeholder="you@company.com">
+        </label>
+        <label for="authPassword">Password
+          <input type="password" id="authPassword" autocomplete="current-password" required placeholder="••••••••">
+        </label>
+        <button type="submit" class="btn primary wide">Continue to console →</button>
+        <p id="authError" class="error"></p>
+        <p class="switch">No account? <button type="button" id="showRegister" class="linklike">Create super admin</button></p>
+        <p class="hint">First account becomes super admin • All data is tenant-isolated</p>
+      </form>
+      <form id="registerForm" class="form hidden">
+        <label for="regName">Full name
+          <input type="text" id="regName" autocomplete="name" placeholder="Ada Lovelace">
+        </label>
+        <label for="regEmail">Work email
+          <input type="email" id="regEmail" autocomplete="email" required placeholder="ada@company.com">
+        </label>
+        <label for="regPassword">Password <span class="muted" style="text-transform:none;letter-spacing:0">min 8 characters</span>
+          <input type="password" id="regPassword" minlength="8" autocomplete="new-password" required placeholder="••••••••">
+        </label>
+        <button type="submit" class="btn primary wide">Create super admin →</button>
+        <p id="regError" class="error"></p>
+        <p class="switch">Have an account? <button type="button" id="showLogin" class="linklike">Sign in</button></p>
+      </form>
+    </div>
+  </div>
+</div>
 
-    <div id="toast" class="toast hidden"></div>
-    <script src="/admin/admin.js"></script>
-    <script>
-      // Platform sidebar extras — keeps admin.js intact
-      (function(){
-        const sidebar = document.getElementById('sidebar');
-        const openBtn = document.getElementById('sidebarOpen');
-        const closeBtn = document.getElementById('sidebarClose');
-        if(openBtn) openBtn.addEventListener('click',()=>sidebar.classList.add('open'));
-        if(closeBtn) closeBtn.addEventListener('click',()=>sidebar.classList.remove('open'));
-        document.addEventListener('click', (e)=>{
-          if(window.innerWidth<=980 && sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target!==openBtn) sidebar.classList.remove('open');
-        });
-        const crumbsBi = document.getElementById('crumbBiz');
-        const bussel = document.getElementById('businessSelect');
-        const observer = new MutationObserver(()=>{ if(bussel && crumbsBi){ const t = bussel.options[bussel.selectedIndex]; if(t) crumbsBi.textContent = t.textContent.trim(); }});
-        if(bussel) observer.observe(bussel, {childList:true, attributes:true});
-        bussel && bussel.addEventListener('change', ()=>{ const t=bussel.options[bussel.selectedIndex]; if(t) crumbsBi.textContent=t.textContent.trim(); });
-        // crumb tab
-        const tabBtns = document.querySelectorAll('.nav-item');
-        const crumbTab = document.getElementById('crumbTab');
-        const pageTitle = document.getElementById('pageTitle');
-        const pageDesc = document.getElementById('pageDesc');
-        const descs = { overview:'Tenant health, usage, and unified brain status — dark glass edition.', agent:'Unified Brain — 6 learned patterns, RLHF trained. No role caps.', custom:'Custom Behaviour Builder — trigger → pattern + tone + instructions.', memory:'Per-customer memory and stable fields, scoped to business.', behavior:'Behavior events timeline, retention-controlled.', knowledge:'Ground-truth knowledge base for retrieval.', customers:'Customers, erasure, and GDPR.', integration:'Widget snippet, API keys, and embed.', audit:'Audit trail of admin and portal actions.' };
-        tabBtns.forEach(b=>b.addEventListener('click',()=>{
-          tabBtns.forEach(x=>{x.classList.remove('active'); x.setAttribute('aria-selected','false'); x.tabIndex=-1});
-          b.classList.add('active'); b.setAttribute('aria-selected','true'); b.tabIndex=0;
-          if(crumbTab) crumbTab.textContent = b.textContent.trim().replace(/^[^A-Za-z0-9]+/, '');
-          if(pageTitle) pageTitle.textContent = b.textContent.trim().replace(/^[^A-Za-z0-9]+/, '');
-          if(pageDesc) pageDesc.textContent = descs[b.dataset.tab] || '';
-          if(window.innerWidth<=980) sidebar.classList.remove('open');
-          // sync old tabs handler expects .tabs button.active, so mirror active state there too
-        }));
-        // sync title with initial
-        if(bussel && bussel.options.length) setTimeout(()=>{ const t=bussel.options[bussel.selectedIndex]; if(t&&crumbsBi) crumbsBi.textContent=t.textContent.trim(); },300);
-      })();
-    </script>
+<!-- DASHBOARD -->
+<div id="dashView" class="hidden">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <div class="brand">
+          <div class="logo sm">N</div>
+          <div>
+            <div class="brand-name sm">NOVA</div>
+            <div class="brand-sub sm">Admin</div>
+          </div>
+        </div>
+        <button class="icon-btn" id="sidebarClose" aria-label="Close">✕</button>
+      </div>
+      <div class="org">
+        <label for="businessSelect">Organization</label>
+        <select id="businessSelect"></select>
+        <button id="newBusinessBtn" class="btn ghost small wide">+ New business</button>
+      </div>
+      <nav class="nav" id="tabs" aria-label="Admin sections">
+        <div class="nav-group">
+          <div class="nav-title">Platform</div>
+          <button data-tab="overview" class="nav-item active"><span class="ic">◉</span> Overview</button>
+          <button data-tab="agent" class="nav-item"><span class="ic">⬢</span> Brain</button>
+          <button data-tab="custom" class="nav-item"><span class="ic">✦</span> Behaviour</button>
+        </div>
+        <div class="nav-group">
+          <div class="nav-title">Growth</div>
+          <button data-tab="knowledge" class="nav-item"><span class="ic">▭</span> Knowledge</button>
+          <button data-tab="memory" class="nav-item"><span class="ic">◎</span> Memory</button>
+          <button data-tab="behavior" class="nav-item"><span class="ic">◐</span> Behavior</button>
+          <button data-tab="customers" class="nav-item"><span class="ic">◯</span> Customers</button>
+        </div>
+        <div class="nav-group">
+          <div class="nav-title">Operate</div>
+          <button data-tab="integration" class="nav-item"><span class="ic">⧉</span> Integration</button>
+          <button data-tab="audit" class="nav-item"><span class="ic">≡</span> Audit</button>
+        </div>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="who">
+          <div id="whoami"></div>
+          <div class="muted xs">Super admin • Dark glass</div>
+        </div>
+        <button id="logoutBtn" class="btn ghost small wide">Sign out</button>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn" id="sidebarOpen" aria-label="Open">☰</button>
+        <div class="crumbs"><span>Console</span><span class="sep">/</span><strong id="crumbBiz">—</strong><span class="sep">/</span><span id="crumbTab">Overview</span></div>
+        <span class="spacer"></span>
+        <span class="pill">NOVA Platform • v1.0</span>
+      </header>
+      <main class="content">
+        <div class="page-head">
+          <h1 id="pageTitle">Overview</h1>
+          <p id="pageDesc" class="muted">Tenant health, usage, and Unified Brain — live in under a second.</p>
+        </div>
+        <section id="tab-overview" class="tabpane pane active"></section>
+        <section id="tab-agent" class="tabpane pane"></section>
+        <section id="tab-custom" class="tabpane pane"></section>
+        <section id="tab-memory" class="tabpane pane"></section>
+        <section id="tab-behavior" class="tabpane pane"></section>
+        <section id="tab-knowledge" class="tabpane pane"></section>
+        <section id="tab-customers" class="tabpane pane"></section>
+        <section id="tab-integration" class="tabpane pane"></section>
+        <section id="tab-audit" class="tabpane pane"></section>
+      </main>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+<script src="/admin/admin.js"></script>
+<script>
+(function(){
+  const s=document.getElementById('sidebar'), o=document.getElementById('sidebarOpen'), c=document.getElementById('sidebarClose');
+  if(o) o.addEventListener('click',()=>s.classList.add('open'));
+  if(c) c.addEventListener('click',()=>s.classList.remove('open'));
+  document.addEventListener('click',e=>{ if(innerWidth<=980 && s.classList.contains('open') && !s.contains(e.target) && e.target!==o) s.classList.remove('open'); });
+})();
+</script>
 </body>
 </html>
