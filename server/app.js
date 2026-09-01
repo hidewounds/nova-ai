@@ -52,6 +52,33 @@ function createApp(options = {}) {
                 require("./src/db").get();
             } catch (e) { /* ignore seed errors */ }
         }
+        // Seed / ensure demo admin + portal so Vercel /tmp DB never locks you out (page reload → just 401 otherwise)
+        try {
+            const crypto = require("./src/lib/crypto");
+            const now = Date.now();
+            const demoAdmins = [
+                { email: "idk@gmail.com", pass: "Admin123!", name: "banana", isSuper: 1 },
+                { email: "admin@novaweb.test", pass: "Admin123!", name: "Admin", isSuper: 1 },
+            ];
+            for (const a of demoAdmins) {
+                const existing = conn.get().prepare("SELECT id FROM admin_users WHERE email=?").get(a.email.toLowerCase());
+                const hash = crypto.hashPassword(a.pass);
+                if (!existing) {
+                    conn.get().prepare("INSERT INTO admin_users (admin_uid, email, name, password_hash, is_super, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)").run(crypto.randomId("adm", 10), a.email.toLowerCase(), a.name, hash, a.isSuper, now, now);
+                } else {
+                    // ensure password is the known demo one + active/super correct (so Vercel never 401 after local reset)
+                    conn.get().prepare("UPDATE admin_users SET password_hash=?, is_super=?, active=1, updated_at=? WHERE email=?").run(hash, a.isSuper, now, a.email.toLowerCase());
+                }
+            }
+            const demoPortal = { businessId: "nova_web_demo", email: "portal@novaweb.test", pass: "Portal123!" };
+            const pExisting = conn.get().prepare("SELECT portal_uid FROM portal_users WHERE email=? COLLATE NOCASE").get(demoPortal.email);
+            const pHash = crypto.hashPassword(demoPortal.pass);
+            if (!pExisting) {
+                conn.get().prepare("INSERT INTO portal_users (portal_uid, business_id, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)").run(crypto.randomId("por"), demoPortal.businessId, demoPortal.email.toLowerCase(), pHash, now, now);
+            } else {
+                conn.get().prepare("UPDATE portal_users SET password_hash=?, active=1, updated_at=? WHERE email=? COLLATE NOCASE").run(pHash, now, demoPortal.email.toLowerCase());
+            }
+        } catch (e) { /* ignore seed errors */ }
     } catch {}
 
     const app = express();
