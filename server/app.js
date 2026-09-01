@@ -53,6 +53,25 @@ function createApp(options = {}) {
                 // ensure chrono schedule seeded via migration already, but ensure
                 require("./src/db").get();
             } catch (e) { /* ignore seed errors */ }
+            // Ensure demo business has portal flags enabled - otherwise portal analytics/knowledge 403 -> black screen on fresh Vercel DB
+            try {
+                const flags = require("./src/core/flags/store");
+                const demoId = "nova_web_demo";
+                const existingBiz = conn.get().prepare("SELECT business_id FROM businesses WHERE business_id=?").get(demoId);
+                if (existingBiz) {
+                    flags.setFlags(demoId, {
+                        portal_enabled: true,
+                        knowledge_edit: true,
+                        edit_contact: true,
+                        edit_tone: true,
+                        view_analytics: true,
+                        view_customers: true,
+                        email_handoff: true,
+                        edit_followup: true,
+                        weekly_digest: true
+                    });
+                }
+            } catch {}
         }
         // Seed / ensure demo admin + portal so Vercel /tmp DB never locks you out (page reload → just 401 otherwise)
         try {
