@@ -61,8 +61,17 @@ function corsOriginValidator(req, res, next) {
     if (allowed.length === 0) {
         // No explicit allowlist configured
         if (env.isProduction) {
-            // In production without allowlist, still allow safe same-origin + public embeds
-            // For sensitive admin/portal routes, deny cross-origin; for public embeds we already returned.
+            // Same-origin (admin/portal served from same host) must be allowed — otherwise browser POST with Origin is blocked
+            const host = String(req.headers.host || "");
+            const originHost = (() => { try { return new URL(origin).host; } catch { return ""; } })();
+            const isSameHost = originHost && host && originHost === host;
+            const isVercelProd = origin.includes("vercel.app") || origin.includes("nova-ai") || isSameHost;
+            if (isSameHost || isVercelProd) {
+                res.setHeader("Access-Control-Allow-Origin", origin);
+                res.setHeader("Vary", "Origin");
+                res.setHeader("Access-Control-Allow-Credentials", "false");
+                return next();
+            }
             return res.status(403).json({
                 error: { code: "cors_forbidden", message: "Origin not allowed. Configure NOVA_ALLOWED_ORIGINS to allow your dashboard/API origins." },
                 requestId: req.requestId,
