@@ -30,6 +30,16 @@ function getTokenSecret() {
         cachedSecret = env.adminTokenSecretFromEnv;
         return cachedSecret;
     }
+    // On Vercel, SQLite at /tmp is ephemeral per lambda instance - a DB-stored secret would differ per instance
+    // and cause tokens signed on one instance to be invalid on another (login -> immediate 401 on /me).
+    // Use a stable env-derived fallback when running on Vercel without explicit NOVA_ADMIN_TOKEN_SECRET.
+    if (process.env.VERCEL) {
+        const fallbackSource = process.env.NOVA_CREDENTIAL_SECRET || "nova-vercel-fallback-secret-CHANGE-ME-via-NOVA_ADMIN_TOKEN_SECRET";
+        cachedSecret = crypto.sha256hex(fallbackSource).slice(0, 64);
+        // Ensure 64 hex chars (32 bytes) - sha256hex already 64
+        if (cachedSecret.length !== 64) cachedSecret = crypto.randomHex(32);
+        return cachedSecret;
+    }
     const row = db().prepare(`SELECT value FROM meta WHERE key = 'admin_token_secret'`).get();
     if (row?.value) {
         cachedSecret = row.value;

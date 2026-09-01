@@ -30,7 +30,9 @@ const { authenticateIntegration } = require("./src/auth/integration");
 function createApp(options = {}) {
     db.init({ dbPath: options.dbPath });
     // Seed demo business for widget key so widget never 401 on fresh Vercel /tmp DB
+    // Skip seeding in test mode - tests expect isolated empty DB for register flow
     try {
+        if (env.nodeEnv === "test") throw new Error("skip seeding in test");
         const conn = require("./src/db/connection");
         const bizCount = conn.get().prepare("SELECT COUNT(*) as n FROM businesses").get()?.n || 0;
         if (bizCount === 0) {
@@ -64,7 +66,9 @@ function createApp(options = {}) {
                 const existing = conn.get().prepare("SELECT id FROM admin_users WHERE email=?").get(a.email.toLowerCase());
                 const hash = crypto.hashPassword(a.pass);
                 if (!existing) {
-                    conn.get().prepare("INSERT INTO admin_users (admin_uid, email, name, password_hash, is_super, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)").run(crypto.randomId("adm", 10), a.email.toLowerCase(), a.name, hash, a.isSuper, now, now);
+                    // Deterministic UID for Vercel ephemeral /tmp DB - ensures token from one lambda validates on another
+                    const deterministicUid = "adm_" + crypto.sha256hex(a.email.toLowerCase()).slice(0, 12);
+                    conn.get().prepare("INSERT INTO admin_users (admin_uid, email, name, password_hash, is_super, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)").run(deterministicUid, a.email.toLowerCase(), a.name, hash, a.isSuper, now, now);
                 } else {
                     // ensure password is the known demo one + active/super correct (so Vercel never 401 after local reset)
                     conn.get().prepare("UPDATE admin_users SET password_hash=?, is_super=?, active=1, updated_at=? WHERE email=?").run(hash, a.isSuper, now, a.email.toLowerCase());
@@ -74,7 +78,8 @@ function createApp(options = {}) {
             const pExisting = conn.get().prepare("SELECT portal_uid FROM portal_users WHERE email=? COLLATE NOCASE").get(demoPortal.email);
             const pHash = crypto.hashPassword(demoPortal.pass);
             if (!pExisting) {
-                conn.get().prepare("INSERT INTO portal_users (portal_uid, business_id, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)").run(crypto.randomId("por"), demoPortal.businessId, demoPortal.email.toLowerCase(), pHash, now, now);
+                const deterministicPid = "por_" + crypto.sha256hex(demoPortal.email.toLowerCase()).slice(0, 12);
+                conn.get().prepare("INSERT INTO portal_users (portal_uid, business_id, email, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)").run(deterministicPid, demoPortal.businessId, demoPortal.email.toLowerCase(), pHash, now, now);
             } else {
                 conn.get().prepare("UPDATE portal_users SET password_hash=?, active=1, updated_at=? WHERE email=? COLLATE NOCASE").run(pHash, now, demoPortal.email.toLowerCase());
             }
@@ -130,9 +135,9 @@ function createApp(options = {}) {
         }
     });
 
-    // CSRF token endpoint for portal
-    app.get("/api/portal/csrf-token", rateLimit({ scope: "admin" }), (req, res) => {
-        // This will be handled by portal auth middleware
+    // CSRF token endpoint for portal - requires portal auth (Bearer) to issue token
+    const portalAuthForCsrf = require("./src/auth/portal");
+    app.get("/api/portal/csrf-token", rateLimit({ scope: "admin" }), portalAuthForCsrf.requirePortal, (req, res) => {
         csrfIssueToken(req, res);
     });
 

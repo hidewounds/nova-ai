@@ -19,14 +19,19 @@ const TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12h
 const SLIDING_WINDOW_MS = 30 * 60 * 1000; // extend if within 30min of expiry
 
 function getTokenSecret() {
-    let secret = process.env.NOVA_ADMIN_TOKEN_SECRET;
-    if (!secret) {
-        const row = db().prepare("SELECT value FROM meta WHERE key = 'portal_token_secret'").get();
-        if (row) secret = row.value;
-        else {
-            secret = libCrypto.randomHex(32);
-            db().prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('portal_token_secret', ?)").run(secret);
-        }
+    // Prefer env secret for consistency with admin (stable across Vercel lambdas)
+    let secret = env.adminTokenSecretFromEnv || process.env.NOVA_ADMIN_TOKEN_SECRET;
+    if (secret) return secret;
+    // On Vercel, /tmp DB is ephemeral per lambda - avoid per-instance random secret which breaks cross-instance validation
+    if (process.env.VERCEL) {
+        const fallbackSource = process.env.NOVA_CREDENTIAL_SECRET || "nova-vercel-fallback-secret-CHANGE-ME-via-NOVA_ADMIN_TOKEN_SECRET";
+        return libCrypto.sha256hex ? libCrypto.sha256hex(fallbackSource).slice(0, 64) : require("crypto").createHash("sha256").update(String(fallbackSource)).digest("hex");
+    }
+    const row = db().prepare("SELECT value FROM meta WHERE key = 'portal_token_secret'").get();
+    if (row) secret = row.value;
+    else {
+        secret = libCrypto.randomHex(32);
+        db().prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('portal_token_secret', ?)").run(secret);
     }
     return secret;
 }

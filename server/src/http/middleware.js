@@ -194,8 +194,18 @@ async function validateCsrfToken(token, businessId) {
 }
 
 async function csrfProtection(req, res, next) {
-    const isPortalMutation = req.path.startsWith("/api/portal") && ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
+    // Use originalUrl because when mounted at /api/portal, req.path is stripped (e.g. "/settings" not "/api/portal/settings")
+    const url = req.originalUrl || req.url || "";
+    const pathOnly = url.split("?")[0];
+    const isPortalMutation = pathOnly.startsWith("/api/portal") && ["POST", "PUT", "PATCH", "DELETE"].includes(req.method);
     if (!isPortalMutation) return next();
+    // Public portal auth never needs CSRF - otherwise login is blocked (chicken-egg)
+    if (pathOnly === "/api/portal/auth/login" || pathOnly.startsWith("/api/portal/auth/login?")) return next();
+    // Bearer token auth (admin & portal dashboard use Authorization: Bearer ...) is not CSRF-vulnerable
+    // (browser cannot auto-send Authorization header cross-origin). Skip CSRF for Bearer to keep dashboard working
+    // without requiring client to fetch/attach X-CSRF-Token.
+    const auth = req.headers["authorization"] || req.headers["Authorization"];
+    if (typeof auth === "string" && /^Bearer\s+/i.test(auth)) return next();
     const token = req.headers["x-csrf-token"] || req.body?.csrf_token;
     const ok = token ? await validateCsrfToken(token, req.nova?.businessId) : false;
     if (!ok) {
