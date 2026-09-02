@@ -179,12 +179,15 @@
     }catch(e){bot.textContent="Error: "+e.message; bot.style.borderColor="var(--bad-border)"; bot.style.background="var(--bad-bg)"}
     body.scrollTop=body.scrollHeight;
   };
-  // --- Knowledge: premium workspace ---
+  // --- Knowledge: premium workspace — fixed null querySelector & nested card duplicate style ---
   async function renderKnowledge(){
     var p=$("tab-knowledge");
-    p.innerHTML='<div class="card"><div class="card-head"><h3>Knowledge</h3><button class="btn primary small" onclick="document.getElementById(\'knTitle\').focus()">+ Add source</button></div><p class="muted" style="margin:-8px 0 12px">Everything NOVA knows about your business. Grounded, synced, and healthy.</p><div id="knowledgeStats" class="grid" style="margin-bottom:14px">'+skeleton(3).slice(22,-8)+'</div><div class="row"><div style="flex:1"><label>Title<input id="knTitle" placeholder="Do you deliver?"></label></div><div style="width:160px"><label>Type<select id="knType"><option value="faq">FAQ</option><option value="policy">Policy</option><option value="product">Product</option><option value="info">Info</option></select></label></div><div style="flex:0 0 auto;padding-top:18px"><button class="btn primary" onclick="addKnowledge()">Add</button></div></div><label>Content<textarea id="knContent" placeholder="Yes — free delivery over $50 within the city..."></textarea></label><div id="knMsg"></div><div id="knTableWrap" class="table-wrap" style="margin-top:14px"><table id="knTable"><thead><tr><th>Title</th><th>Type</th><th>Content</th><th></th></tr></thead><tbody><tr><td colspan="4"><div class="skeleton" style="height:32px"></div></td></tr></tbody></table></div><div style="margin-top:18px" class="card" style="background:var(--bg-subtle)"><h3 style="margin-bottom:8px">Bulk import</h3><p class="muted xs" style="margin:0 0 8px">Paste CSV <code>title,type,content</code> per line, or JSON array. Max 50.</p><textarea id="knBulk" placeholder="Return policy,policy,Free 30-day returns..." style="min-height:88px"></textarea><div class="row" style="margin-top:8px"><button class="btn ghost small" onclick="bulkKnowledge()">Import bulk</button><input type="file" id="knBulkFile" accept=".csv,.json,.txt" style="width:auto"></div><div id="knBulkMsg"></div></div><div style="margin-top:16px"><h3>Search preview <span class="muted xs" style="font-weight:400">— how NOVA retrieves</span></h3><div class="row"><input id="knSearchQ" placeholder="Try: do you ship to Canada?" style="flex:1"><button class="btn ghost" onclick="searchKnowledge()">Search</button></div><div id="knSearchResults" style="margin-top:10px"></div></div></div>';
+    if(!p){ console.warn("tab-knowledge not found"); return; }
+    // clean, not nested: 3 sibling cards (header+form+table | bulk | search)
+    p.innerHTML='<div class="card"><div class="card-head"><h3>Knowledge</h3><button class="btn primary small" onclick="document.getElementById(\'knTitle\')&&document.getElementById(\'knTitle\').focus()">+ Add source</button></div><p class="muted" style="margin:-8px 0 12px">Everything NOVA knows about your business. Grounded, synced, and healthy.</p><div id="knowledgeStats" class="grid" style="margin-bottom:14px">'+skeleton(3).slice(22,-8)+'</div><div class="row"><div style="flex:1"><label>Title<input id="knTitle" placeholder="Do you deliver?"></label></div><div style="width:160px"><label>Type<select id="knType"><option value="faq">FAQ</option><option value="policy">Policy</option><option value="product">Product</option><option value="info">Info</option></select></label></div><div style="flex:0 0 auto;padding-top:18px"><button class="btn primary" onclick="addKnowledge()">Add</button></div></div><label>Content<textarea id="knContent" placeholder="Yes — free delivery over $50 within the city..."></textarea></label><div id="knMsg"></div><div id="knTableWrap" class="table-wrap" style="margin-top:14px"><table id="knTable"><thead><tr><th>Title</th><th>Type</th><th>Content</th><th></th></tr></thead><tbody><tr><td colspan="4"><div class="skeleton" style="height:32px"></div></td></tr></tbody></table></div></div><div class="card" style="background:var(--bg-subtle)"><h3 style="margin-bottom:8px">Bulk import</h3><p class="muted xs" style="margin:0 0 8px">Paste CSV <code>title,type,content</code> per line, or JSON array. Max 50.</p><textarea id="knBulk" placeholder="Return policy,policy,Free 30-day returns..." style="min-height:88px"></textarea><div class="row" style="margin-top:8px"><button class="btn ghost small" onclick="bulkKnowledge()">Import bulk</button><input type="file" id="knBulkFile" accept=".csv,.json,.txt" style="width:auto"></div><div id="knBulkMsg"></div></div><div class="card"><h3>Search preview <span class="muted xs" style="font-weight:400">— how NOVA retrieves</span></h3><div class="row"><input id="knSearchQ" placeholder="Try: do you ship to Canada?" style="flex:1"><button class="btn ghost small" onclick="searchKnowledge()">Search</button></div><div id="knSearchResults" style="margin-top:12px"></div></div>';
     // stats
     try{
+      if(!state.businessId){ throw new Error("No workspace selected"); }
       var raw=await api("/api/admin/businesses/"+encodeURIComponent(state.businessId)+"/knowledge");
       var items=Array.isArray(raw)?raw:Array.isArray(raw.items)?raw.items:[];
       var byType={}; items.forEach(function(k){var t=k.knowledge_type||k.knowledgeType||"faq";byType[t]=(byType[t]||0)+1});
@@ -193,14 +196,25 @@
       statsHtml+='<div class="kpi"><div class="n">'+(byType.policy||0)+'</div><div class="l">Policies</div><div class="trend">Healthy</div></div>';
       statsHtml+='<div class="kpi"><div class="n">'+(byType.product||0)+'</div><div class="l">Products</div><div class="trend">Indexed</div></div>';
       var el=$("knowledgeStats"); if(el) el.innerHTML=statsHtml;
-      // table
-      var tbody=$("knTable").querySelector("tbody");
+      // table — defensive, was throwing cannot read querySelector of null
+      var knTableEl=$("knTable");
+      if(!knTableEl){ console.warn("knTable not found after render"); return; }
+      var tbody=knTableEl.querySelector("tbody");
+      if(!tbody){ console.warn("knTable tbody not found"); return; }
       if(items.length===0){
         tbody.innerHTML='<tr><td colspan="4"><div class="empty" style="margin:0;border:0"><h4>No knowledge yet.</h4><p>Add a website, document, or FAQ — NOVA answers grounded to this.</p></div></td></tr>';
       } else {
         tbody.innerHTML=items.map(function(k){return '<tr><td><b>'+esc(k.title)+'</b><div class="muted xs">'+esc(k.knowledge_type||"")+'</div></td><td><span class="pill" style="font-size:10px">'+esc(k.knowledge_type||"faq")+'</span></td><td style="max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc((k.content||"").slice(0,120))+'</td><td><button class="btn ghost small" onclick="deleteKnowledge(\''+k.knowledge_id+'\')">Remove</button></td></tr>'}).join("");
       }
-    }catch(e){ $("knTable").querySelector("tbody").innerHTML='<tr><td colspan="4"><div class="error-state"><span>'+esc(e.message)+'</span><button class="btn ghost small" onclick="renderKnowledge()">Retry</button></div></td></tr>' }
+    }catch(e){
+      var knTableEl2=$("knTable");
+      if(knTableEl2 && knTableEl2.querySelector("tbody")){
+        knTableEl2.querySelector("tbody").innerHTML='<tr><td colspan="4"><div class="error-state"><span>'+esc(e.message)+'</span><button class="btn ghost small" onclick="renderKnowledge()">Retry</button></div></td></tr>';
+      } else {
+        var p2=$("tab-knowledge");
+        if(p2) p2.innerHTML+='<div class="error-state"><span>'+esc(e.message)+'</span><button class="btn ghost small" onclick="renderKnowledge()">Retry</button></div>';
+      }
+    }
     // bulk file
     var f=$("knBulkFile"); if(f && !f._bound){ f._bound=true; f.addEventListener("change",function(){ var file=f.files[0]; if(!file) return; var r=new FileReader(); r.onload=function(e){$("knBulk").value=e.target.result}; r.readAsText(file); });}
   }
