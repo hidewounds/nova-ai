@@ -242,24 +242,24 @@
                 if ((voiceEnabled || multilanguageEnabled) && navigator.mediaDevices && window.MediaRecorder) {
                     if (micEl) micEl.style.display = "inline-block";
                 }
-                // auto guide on FIRST visit — starts without typing, points at real elements
+                // auto guide ONLY on first login visit — not on every first visit, not on "guide me" chat
                 try {
-                    var seen = null; try { seen = localStorage.getItem("nova_guide_seen"); } catch {}
-                    if(!seen && window.NOVA_GUIDE){
+                    var login = null; try { login = localStorage.getItem("nova_web_login") || localStorage.getItem("nova_login") || sessionStorage.getItem("nova_web_login"); } catch {}
+                    var seenKey = login ? "nova_guide_seen_" + login : "nova_guide_seen";
+                    var seen = null; try { seen = localStorage.getItem(seenKey); } catch {}
+                    // only auto-start if logged in and not seen for this login
+                    if(login && !seen && window.NOVA_GUIDE){
                         setTimeout(function(){
-                            // fetch guide, fallback to generic 3-step
                             api("/api/v1/widget/guide",{method:"GET"}).then(function(gd){
                                 var steps = (gd && gd.guide && gd.guide.steps && gd.guide.steps.length) ? gd.guide.steps : [
                                     { id:"welcome", title:"Welcome — I'll guide you", selector:"body", description:"Hi, I'm NOVA. I'll show you around in 60 seconds.", position:"center" },
                                     { id:"explore", title:"Explore", selector:"nav, header", description:"Browse what's here — I'll explain as we go.", position:"bottom" },
                                     { id:"ask", title:"Ask me anything on NOVA", selector:"#nova-widget-button", description:"Tour done. Ask any question — I handle basics, bookings and voice.", position:"left" }
                                 ];
-                                // auto-start overlay without typing
                                 if(window.NOVA_GUIDE && window.NOVA_GUIDE.start){
                                     window.NOVA_GUIDE.start(steps, { onStep: function(){}});
-                                    try { localStorage.setItem("nova_guide_seen","1"); } catch {}
-                                    // also add chat hint
-                                    addMessage("assistant", "👋 I'm showing you around — follow the highlight. At the end, ask me any question on NOVA.");
+                                    try { localStorage.setItem(seenKey,"1"); localStorage.setItem("nova_guide_seen","1"); } catch {}
+                                    addMessage("assistant", "👋 Welcome back — showing you around. Follow the highlight, then ask me anything.");
                                     messages.push({role:"assistant", content:"Showing tour — follow highlight"});
                                     hasWelcomed=true;
                                 }
@@ -269,10 +269,10 @@
                                         { id:"welcome", title:"Welcome — I'll guide you", selector:"body", description:"Hi, I'm NOVA. I'll show you around in 60 seconds.", position:"center" },
                                         { id:"ask", title:"Ask me anything on NOVA", selector:"#nova-widget-button", description:"Tour done. Ask any question.", position:"left" }
                                     ]);
-                                    try { localStorage.setItem("nova_guide_seen","1"); } catch {}
+                                    try { localStorage.setItem(seenKey,"1"); } catch {}
                                 }
                             });
-                        }, 1800);
+                        }, 1200);
                     }
                 } catch {}
             }
@@ -324,8 +324,31 @@
     }
 
     function maybeGuideIntent(text){
+        // guide overlay is NOT triggered by chat anymore — only auto on first login visit (see loadConfig)
+        // keep helper for legacy but never auto-start guide here
+        return false;
+    }
+    function maybeNavigateIntent(text){
         var t = String(text||"").toLowerCase();
-        return /guide me|show.*around|tour|how (does|to use) this site|website guide|operate.*site|full operation/.test(t);
+        var m = t.match(/guide me to (?:the )?(\w+)/);
+        if(m){
+            var target = (m[1]||"").toLowerCase();
+            var map = { features:"features.html", pricing:"pricing.html", home:"index.html", checkout:"checkout.html", login:"login.html", featureshtml:"features.html" };
+            if(map[target]) return map[target];
+            // also handle "features section" -> features.html
+            if(target==="features" || target==="feature") return "features.html";
+            if(target==="pricing" || target==="price") return "pricing.html";
+            return null;
+        }
+        // also handle direct "open features" etc.
+        if(/open (features|pricing|home)/.test(t)){
+            var mm = t.match(/open (features|pricing|home)/);
+            var tgt = mm?mm[1]:"";
+            if(tgt==="features") return "features.html";
+            if(tgt==="pricing") return "pricing.html";
+            if(tgt==="home") return "index.html";
+        }
+        return null;
     }
     function genericGuideSteps(){
         return [
@@ -338,25 +361,31 @@
         var text = (inputEl.value || "").trim();
         if (!text || busy) return;
 
-        if(maybeGuideIntent(text)){
+        // navigation intent: "guide me to features" -> open that section, not guide overlay
+        var navTarget = maybeNavigateIntent(text);
+        if(navTarget){
             inputEl.value = "";
             addMessage("user", text);
             messages.push({ role: "user", content: text });
-            try {
-                var gdata = await api("/api/v1/widget/guide", { method: "GET" });
-                var steps = (gdata && gdata.guide && gdata.guide.steps && gdata.guide.steps.length) ? gdata.guide.steps : genericGuideSteps();
-                if(window.NOVA_GUIDE && window.NOVA_GUIDE.start){
-                    window.NOVA_GUIDE.start(steps, { onStep: function(){}});
-                    addMessage("assistant", "I'll guide you in "+steps.length+" short steps — I'll point at each thing. Follow the highlight. At the end, ask me any question on NOVA.");
-                    messages.push({ role: "assistant", content: "I'll guide you in "+steps.length+" short steps." });
-                    return;
-                }
-            } catch(e){
-                if(window.NOVA_GUIDE) window.NOVA_GUIDE.start(genericGuideSteps());
-                addMessage("assistant", "I'll guide you — following the highlight.");
-                messages.push({ role: "assistant", content: "I'll guide you" });
-                return;
-            }
+            addMessage("assistant", "Opening "+navTarget.replace(".html","")+" for you — taking you there.");
+            messages.push({ role: "assistant", content: "Opening "+navTarget });
+            setTimeout(function(){
+                try{
+                    // if same page section, scroll; else navigate
+                    if(navTarget.indexOf("features")!==-1){
+                        // if on index, scroll to bento, else go to features.html
+                        var bento = document.querySelector(".bento");
+                        if(bento && window.location.pathname.indexOf("features")===-1 && window.location.pathname.indexOf("index")!==-1){
+                            bento.scrollIntoView({behavior:"smooth", block:"start"});
+                        } else {
+                            window.location.href = navTarget;
+                        }
+                    } else {
+                        window.location.href = navTarget;
+                    }
+                } catch(e){ window.location.href = navTarget; }
+            }, 600);
+            return;
         }
 
         inputEl.value = "";
@@ -382,15 +411,30 @@
             conversationId = data.conversationId || conversationId;
 
             var reply = data.reply || "Sorry, I could not generate a response.";
+            // handle server-side navigation intent [NAVIGATE:features.html]
+            var navMatch = reply.match(/\[NAVIGATE:([^\]]+)\]/);
+            if(navMatch){
+                var target = navMatch[1].trim();
+                reply = reply.replace(/\[NAVIGATE:[^\]]+\]/g, "").trim();
+                if(!reply) reply = "Opening "+target.replace(".html","")+" for you — taking you there.";
+            }
             addMessage("assistant", reply);
             messages.push({ role: "assistant", content: reply });
-            // If chat used guide.start capability, backend may return guide in reply? Check for guide trigger in reply and auto-start overlay
-            try {
-                if(/guide.*steps|I'll guide|point at/.test(reply) && window.NOVA_GUIDE){
-                    var gd = await api("/api/v1/widget/guide", { method: "GET" });
-                    if(gd && gd.guide && gd.guide.steps){ window.NOVA_GUIDE.start(gd.guide.steps); }
-                }
-            } catch{}
+            if(navMatch){
+                try{
+                    setTimeout(function(){
+                        var tgt = navMatch[1].trim();
+                        if(tgt.indexOf("features")!==-1){
+                            var bento = document.querySelector(".bento");
+                            if(bento && window.location.pathname.indexOf("features")===-1){
+                                bento.scrollIntoView({behavior:"smooth", block:"start"});
+                                return;
+                            }
+                        }
+                        window.location.href = tgt;
+                    }, 800);
+                } catch{}
+            }
         } catch (error) {
             loading.remove();
             addMessage("assistant", error.message || "Something went wrong.");
