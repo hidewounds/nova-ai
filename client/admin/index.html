@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="NOVA Admin Console — multi-tenant AI agent platform. Manage tenants, brain, knowledge & integrations. No code changes, full audit.">
+<meta name="theme-color" content="#050508">
 <title>NOVA — Admin</title>
-<link rel="stylesheet" href="/admin/admin.css">
+<link rel="stylesheet" href="/admin/admin.css?v=1.1">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f0f11'/><rect x='14' y='14' width='72' height='72' rx='12' fill='none' stroke='%23232326' stroke-width='2'/><text x='50' y='62' font-size='42' text-anchor='middle' fill='%23f4f4f5' font-family='Inter' font-weight='600'>N</text></svg>">
 </head>
 <body>
@@ -101,15 +103,15 @@
         </div>
         <div class="nav-group">
           <div class="nav-title">Analytics</div>
-          <button data-tab="overview" class="nav-item" data-group="analytics" role="tab" aria-selected="false" tabindex="-1"><span class="ic">◐</span> Performance</button>
-          <button data-tab="audit" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">≡</span> Usage</button>
-          <button data-tab="audit" class="nav-item" data-group="costs" role="tab" aria-selected="false" tabindex="-1"><span class="ic">—</span> Costs</button>
+          <button data-tab="performance" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">◆</span> Performance</button>
+          <button data-tab="usage" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">≡</span> Usage</button>
+          <button data-tab="costs" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">$</span> Costs</button>
         </div>
         <div class="nav-group">
           <div class="nav-title">System</div>
-          <button data-tab="overview" class="nav-item" data-group="health" role="tab" aria-selected="false" tabindex="-1"><span class="ic">●</span> Health</button>
-          <button data-tab="audit" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">≡</span> Logs</button>
-          <button data-tab="custom" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">⚙</span> Settings</button>
+          <button data-tab="health" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">●</span> Health</button>
+          <button data-tab="logs" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">☰</span> Logs</button>
+          <button data-tab="settings" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">⚙</span> Settings</button>
         </div>
       </nav>
 
@@ -136,22 +138,33 @@
       <main class="content">
         <div class="page-head">
           <h1 id="pageTitle">Overview</h1>
-          <p id="pageDesc" class="muted">Is NOVA healthy, how is it performing, and does anything need attention?</p>
+          <p id="pageDesc" class="muted">Workspace at a glance — KPIs, attention, and workspace. Health and trends live in their own sections.</p>
           <div class="meta">
             <span class="pill" id="lastUpdated" style="background:var(--bg-subtle)">Updated just now</span>
             <span class="pill" id="businessPill">—</span>
           </div>
         </div>
 
-        <section id="tab-overview" class="tabpane active"></section>
-        <section id="tab-agent" class="tabpane"></section>
-        <section id="tab-custom" class="tabpane"></section>
-        <section id="tab-memory" class="tabpane"></section>
-        <section id="tab-behavior" class="tabpane"></section>
-        <section id="tab-knowledge" class="tabpane"></section>
-        <section id="tab-customers" class="tabpane"></section>
-        <section id="tab-integration" class="tabpane"></section>
-        <section id="tab-audit" class="tabpane"></section>
+        <!-- Workspace -->
+        <section id="tab-overview" class="tabpane active" aria-labelledby="pageTitle"></section>
+        <section id="tab-agent" class="tabpane" aria-label="Agent brain"></section>
+        <section id="tab-knowledge" class="tabpane" aria-label="Knowledge"></section>
+        <section id="tab-integration" class="tabpane" aria-label="Integrations"></section>
+        <!-- Customers -->
+        <section id="tab-customers" class="tabpane" aria-label="Customers"></section>
+        <section id="tab-memory" class="tabpane" aria-label="Memories"></section>
+        <section id="tab-behavior" class="tabpane" aria-label="Conversations"></section>
+        <section id="tab-custom" class="tabpane" aria-label="Behaviour"></section>
+        <!-- Analytics -->
+        <section id="tab-performance" class="tabpane" aria-label="Performance"></section>
+        <section id="tab-usage" class="tabpane" aria-label="Usage"></section>
+        <section id="tab-costs" class="tabpane" aria-label="Costs"></section>
+        <!-- System -->
+        <section id="tab-health" class="tabpane" aria-label="Health"></section>
+        <section id="tab-logs" class="tabpane" aria-label="Logs"></section>
+        <section id="tab-settings" class="tabpane" aria-label="Settings"></section>
+        <!-- legacy audit alias (hidden, used via Logs) -->
+        <section id="tab-audit" class="tabpane hidden" aria-hidden="true"></section>
       </main>
     </div>
   </div>
@@ -171,7 +184,7 @@
   const syncBiz=()=>{ const t=sel.options[sel.selectedIndex]; if(t && biz) biz.textContent=t.textContent.replace(' (inactive)','').trim(); if(t && bPill) bPill.textContent=t.textContent.trim(); };
   if(sel){ sel.addEventListener('change',syncBiz); new MutationObserver(syncBiz).observe(sel,{childList:true}); }
   const tabs=document.querySelectorAll('#tabs .nav-item'), ct=document.getElementById('crumbTab'), pt=document.getElementById('pageTitle'), pd=document.getElementById('pageDesc');
-  const descs={overview:"Is NOVA healthy, how is it performing, and does anything need attention?",agent:"The brain of NOVA — status, model, personality, and live preview.",knowledge:"Everything NOVA knows about your business. Grounded, synced, and healthy.",integration:"Connect website, chat, and tools — each with clear status.",customers:"People and conversations — searchable, scannable, GDPR-ready.",memory:"Human-readable memories — explicit and inferred, editable.",behavior:"Conversations and behavior — the raw signal behind memory.",custom:"Teach the brain when to lean into a pattern — trigger, tone, and priority.",audit:"Immutable audit — who changed what, when."};
+  const descs={overview:"Workspace at a glance — KPIs, attention, workspace. (Health → diagnostics, Analytics → trends)",agent:"The brain — identity, personality, live preview. (Knowledge/Memory/Behaviour have their own sections)",knowledge:"Everything NOVA knows — grounded, synced. Only place to manage sources.",integration:"Connect website, chat, tracker — only connections, not model or knowledge.",customers:"People — searchable, GDPR-ready. Click View for memories & conversations in one place.",memory:"Memory config — not live data. Live memories are in Customers → View.",behavior:"Conversations — all threads. Signals are per-customer in Customers → View.",custom:"Behaviour — trigger → pattern + tone. Advanced override, live in <1s.",audit:"Immutable audit — who changed what, when.",performance:"Performance — grounded rate, msgs/conv, signals. (Not latency — see logs)",usage:"Usage — volume handled: conversations, messages, knowledge, customers.",costs:"Costs — attributed revenue, purchases, leads. 7d window.",health:"Health — diagnostics: brain, knowledge, integrations, DB, rate limits.",logs:"Logs — immutable audit of every change. Filterable.",settings:"Settings — workspace identity, plan, integration key. No duplication."};
   tabs.forEach(b=>b.addEventListener('click',()=>{
     const label=b.textContent.trim().replace(/^[^A-Za-z0-9]+/,'');
     if(ct) ct.textContent=label;

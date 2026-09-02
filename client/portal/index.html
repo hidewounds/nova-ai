@@ -3,244 +3,139 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="NOVA Business Portal — manage knowledge, brain behaviour, schedule & voice. Unified brain, grounded answers, GDPR-ready.">
+<meta name="theme-color" content="#050508">
 <title>NOVA — Business Portal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#f8fafc;--panel:#fff;--ink:#0f172a;--mut:#64748b;--line:#e2e8f0;--accent:#6d28d9;--accent2:#8b5cf6;--ok:#059669;--grad:linear-gradient(135deg,#6d28d9 0%,#7c3aed 50%,#06b6d4 100%);--r:14px;--sidebar:280px}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-.hidden{display:none !important}.muted{color:var(--mut)}
-.auth-wrap{min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr}
-.auth-side{background:radial-gradient(700px 500px at 20% 10%, rgba(109,40,217,.16), transparent 60%), linear-gradient(180deg,#0b0e1a 0%, #06070a 100%);color:#e2e8f0;display:flex;flex-direction:column;padding:32px}
-.brand{font-family:Space Grotesk,sans-serif;font-weight:700;display:flex;align-items:center;gap:10px}
-.brand::before{content:"N";width:36px;height:36px;border-radius:10px;background:var(--grad);display:grid;place-items:center;color:#fff;font-weight:800}
-.auth-hero{margin:auto 0;max-width:480px}
-.auth-hero h1{font-family:Space Grotesk,sans-serif;font-size:34px;line-height:1;letter-spacing:-.03em;margin:0 0 12px;color:#fff}
-.auth-hero p{color:#cbd5e1;line-height:1.6}
-.auth-card{width:420px;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:28px;box-shadow:0 10px 40px rgba(2,6,23,.08)}
-label{display:block;margin-bottom:12px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)}
-input,select,textarea{width:100%;margin-top:6px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;font-family:Inter,sans-serif;background:#fff}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 4px #ede9fe}
-textarea{min-height:90px;resize:vertical}
-.btn{border:1px solid transparent;border-radius:12px;padding:10px 16px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
-.btn.primary{background:var(--grad);color:#fff}
-.btn.ghost{background:#fff;border-color:var(--line)}
-.btn.wide{width:100%}
-.msg{padding:10px 12px;border-radius:10px;margin:10px 0;font-size:13px;display:none}
-.msg.ok{display:block;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
-.msg.bad{display:block;background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
-.platform{display:flex;min-height:100vh}
-.sidebar{width:var(--sidebar);flex-shrink:0;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden}
-.sidebar-head{display:flex;align-items:center;justify-content:space-between;padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
-.sidenav{flex:1;overflow-y:auto;padding:14px 10px}
-.nav-title{font-family:JetBrains Mono,monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#64748b;padding:6px 10px 8px}
-.nav-item{width:100%;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;border:1px solid transparent;background:transparent;color:#94a3b8;font-size:13.5px;cursor:pointer;text-align:left}
-.nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
-.nav-item.on{background:#fff;color:#0f172a}
-.nav-ic{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:rgba(255,255,255,.08);font-size:11px}
-.sidebar-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,.06)}
-.who{font-family:JetBrains Mono,monospace;font-size:11px;word-break:break-all;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px 12px;margin-bottom:10px;color:#fff}
-.main{flex:1;min-width:0;background:var(--bg);display:flex;flex-direction:column}
-.topbar{display:flex;align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.8);backdrop-filter:blur(10px);position:sticky;top:0;z-index:5}
-.crumbs{font-family:JetBrains Mono,monospace;font-size:13px;color:var(--mut)}
-.crumbs strong{color:var(--ink)}
-.spacer{flex:1}
-.pill{font-family:JetBrains Mono,monospace;font-size:11px;padding:6px 10px;border-radius:999px;background:#fff;border:1px solid var(--line)}
-.content{max-width:1100px;width:100%;margin:24px auto;padding:0 24px 40px}
-.page-head{margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
-.page-head h1{margin:0;font-family:Space Grotesk,sans-serif;font-size:24px}
-.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 1px 3px rgba(15,23,42,.04);margin-bottom:16px}
-.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
-.stat{border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center}
-.stat b{display:block;font-size:24px;color:var(--accent)}
-.stat span{font-family:JetBrains Mono,monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
-table{width:100%;border-collapse:collapse}
-th,td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px;text-align:left}
-th{font-family:JetBrains Mono,monospace;font-size:11px;color:var(--mut);letter-spacing:.06em;text-transform:uppercase}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-@media(max-width:980px){.auth-wrap{grid-template-columns:1fr}.auth-side{display:none}.sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:.28s;z-index:20}.sidebar.open{transform:none}.content{padding:0 16px 32px}}
-</style>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236d28d9'/><text x='50' y='62' font-size='50' text-anchor='middle' fill='white' font-family='Arial' font-weight='700'>N</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/portal/portal.css?v=1.1">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23050508'/><rect x='14' y='14' width='72' height='72' rx='12' fill='none' stroke='rgba(255,255,255,.07)' stroke-width='2'/><text x='50' y='62' font-size='42' text-anchor='middle' fill='%23f1f5f9' font-family='Space Grotesk' font-weight='700'>N</text></svg>">
 </head>
 <body>
-<div id="loginView" class="auth-wrap">
+<!-- AUTH -->
+<div id="loginView" class="auth-layout">
   <div class="auth-side">
-    <div class="brand">NOVA <span style="color:#a78bfa;font-weight:500">Business</span></div>
+    <div class="auth-brand">
+      <div class="logo">N</div>
+      <div>
+        <div class="brand-name">NOVA</div>
+        <div class="brand-sub">Business Portal</div>
+      </div>
+    </div>
     <div class="auth-hero">
       <h1>Your business, supercharged by NOVA.</h1>
-      <p>Manage knowledge, train the Unified Brain, and turn every visitor into a customer — live in under a second.</p>
+      <p>Manage knowledge, train the unified brain, and turn every visitor into a customer — live in under a second. Quiet, grounded, and fast.</p>
+      <div class="hero-points">
+        <div class="hero-point"><i>◉</i><div><b>Unified Brain</b><br><span>6 patterns, one brain, live in &lt;1s</span></div></div>
+        <div class="hero-point"><i>▭</i><div><b>Knowledge</b><br><span>Grounded answers, no hallucinations</span></div></div>
+        <div class="hero-point"><i>◎</i><div><b>Memory</b><br><span>Explicit, human-readable, GDPR-ready</span></div></div>
+      </div>
     </div>
-    <div style="color:#64748b;font-size:12px">© 2026 NOVA • Trusted by growing teams</div>
+    <div class="auth-foot">© 2026 NOVA • Trusted by growing teams</div>
   </div>
-  <div style="display:grid;place-items:center;padding:32px;background:#f8fafc">
+  <div class="auth-main">
     <div class="auth-card">
-      <h2 style="margin:0 0 6px;font-family:Space Grotesk,sans-serif;font-size:22px">Welcome back</h2>
-      <p class="muted" style="margin:0 0 16px;line-height:1.5">Sign in to your business portal. Your data is isolated and secure.</p>
-      <label for="liEmail">Work email<input id="liEmail" type="email" placeholder="you@yourbusiness.com" autocomplete="username"></label>
-      <label for="liPass">Password<input id="liPass" type="password" placeholder="••••••••" autocomplete="current-password"></label>
-      <div id="loginMsg" class="msg"></div>
-      <button class="btn primary wide" onclick="login()">Continue to portal →</button>
-      <p class="muted" style="margin:12px 0 0;font-size:12px;text-align:center">Need access? Contact your NOVA admin.</p>
+      <h2>Welcome back</h2>
+      <p class="muted">Sign in to your business portal. Your data is isolated and secure.</p>
+      <form id="loginForm" class="form" novalidate>
+        <label for="liEmail">Work email
+          <input id="liEmail" type="email" placeholder="you@yourbusiness.com" autocomplete="username" required aria-label="Work email">
+        </label>
+        <label for="liPass">Password
+          <input id="liPass" type="password" placeholder="••••••••" autocomplete="current-password" required aria-label="Password">
+        </label>
+        <div id="loginMsg" class="msg" role="alert" aria-live="polite"></div>
+        <button type="submit" class="btn primary wide">Continue to portal →</button>
+        <p class="muted" style="margin:12px 0 0;font-size:12px;text-align:center">Need access? Contact your NOVA admin.</p>
+      </form>
     </div>
   </div>
 </div>
 
+<!-- APP -->
 <div id="appView" class="hidden">
-  <div class="platform">
-    <aside class="sidebar" id="psidebar">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar" aria-label="Portal navigation">
       <div class="sidebar-head">
-        <div class="brand" style="font-size:14px"><span style="background:var(--grad);width:28px;height:28px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:800">N</span> NOVA</div>
-        <button class="icon-btn" id="pClose" style="width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:#94a3b8">✕</button>
+        <div class="brand">
+          <div class="logo">N</div>
+          <div>
+            <div class="brand-name">NOVA</div>
+            <div class="brand-sub">Portal</div>
+          </div>
+        </div>
+        <button class="icon-btn" id="sidebarClose" aria-label="Close navigation">✕</button>
       </div>
-      <nav class="sidenav" id="tabs"></nav>
+
+      <div class="biz-switch">
+        <label for="bizCard">Business</label>
+        <div class="biz-card" id="bizCard">
+          <div class="ava">N</div>
+          <div style="min-width:0;flex:1">
+            <div class="name" id="bizName">—</div>
+            <div class="sub" id="bizSub">—</div>
+          </div>
+        </div>
+      </div>
+
+      <nav class="nav" id="tabs" role="tablist" aria-label="Portal sections"></nav>
+
       <div class="sidebar-foot">
-        <div class="who" id="whoami"></div>
-        <button class="btn ghost wide" onclick="logout()" style="background:#fff;color:#0f172a">Sign out</button>
+        <div class="who">
+          <div id="whoami"></div>
+          <div class="muted xs" style="margin-top:4px">Portal • <span id="planBadge" style="color:var(--ink)">—</span></div>
+        </div>
+        <button class="btn ghost small wide" onclick="logout()">Sign out</button>
       </div>
     </aside>
+
     <div class="main">
       <header class="topbar">
-        <button class="icon-btn" id="pOpen" style="display:none;width:36px;height:36px;border-radius:10px;border:1px solid #e2e8f0;background:#fff">☰</button>
-        <div class="crumbs"><span>Business</span><span style="color:#cbd5e1">/</span><strong id="pcrumbBiz">—</strong><span style="color:#cbd5e1">/</span><span id="pcrumbTab">Overview</span></div>
+        <button class="icon-btn" id="sidebarOpen" aria-label="Open navigation">☰</button>
+        <div class="crumbs" aria-label="Breadcrumb">
+          <span>Business</span><span class="sep">/</span><strong id="pcrumbBiz">—</strong><span class="sep">/</span><span id="pcrumbTab">Overview</span>
+        </div>
         <span class="spacer"></span>
-        <span class="pill" id="planBadge">—</span>
+        <span class="pill" id="healthPill"><span class="dot ok"></span> All systems operational</span>
+        <span class="pill" style="color:var(--ink-2)">v1.0</span>
       </header>
+
       <main class="content">
-        <div class="page-head"><h1 id="pTitle">Overview</h1><p id="pDesc" class="muted">Your business overview — usage, revenue and brain performance.</p></div>
-        <section id="tab-overview" class="tab card"><h3>This week</h3><div class="grid" id="weekStats"></div><h3 style="margin-top:18px">All time</h3><div class="grid" id="allStats"></div></section>
-        <section id="tab-knowledge" class="tab card" style="display:none"><h3>Knowledge base</h3><p class="muted">Teach NOVA about your business — grounded answers only.</p>
-          <div class="row"><div><label>Title<input id="knTitle" placeholder="Do you deliver?"></label></div><div><label>Type<select id="knType"><option value="faq">faq</option><option value="policy">policy</option><option value="product">product</option><option value="info">info</option></select></label></div><div style="flex:0 0 auto;padding-top:18px"><button class="btn primary" onclick="addKnowledge()">Add</button></div></div>
-          <label>Content<textarea id="knContent" placeholder="Yes — free delivery over $50..."></textarea></label><div id="knMsg" class="msg"></div>
-          <table id="knTable"><thead><tr><th>Title</th><th>Type</th><th>Content</th><th></th></tr></thead><tbody></tbody></table>
-          <h3 style="margin-top:18px">Bulk import</h3><textarea id="knBulk" placeholder="Return policy,policy,Free 30-day returns..."></textarea><div class="row" style="margin-top:8px"><button class="btn ghost" onclick="bulkKnowledge()">Import bulk</button><input type="file" id="knBulkFile" accept=".csv,.json,.txt" style="width:auto"></div><div id="knBulkMsg" class="msg"></div>
-          <h3 style="margin-top:18px">Search preview</h3><div class="row"><input id="knSearchQ" placeholder="Try: do you ship to Canada?"><button class="btn ghost" onclick="searchKnowledge()">Search</button></div><div id="knSearchResults" style="margin-top:10px"></div>
-        </section>
-        <section id="tab-settings" class="tab card" style="display:none"><h3>Contact identity</h3><div class="row"><div><label>Contact email<input id="sEmail" type="email"></label></div><div><label>Phone<input id="sPhone"></label></div></div><label>Business hours<input id="sHours" placeholder="Mon–Sat 9:00–19:00"></label>
-          <h3 style="margin-top:18px">Send-as email (SMTP)</h3><div class="row"><div><label>SMTP host<input id="smtpHost" placeholder="smtp.gmail.com"></label></div><div><label>Port<input id="smtpPort" type="number" value="587"></label></div></div><div class="row"><div><label>SMTP user<input id="smtpUser" type="email"></label></div><div><label>Password<input id="smtpPass" type="password" placeholder="(unchanged)"></label></div></div><div class="row"><div><label>From name<input id="smtpFrom" placeholder="Your Store"></label></div><div style="flex:0 0 auto;padding-top:18px"><button class="btn ghost" onclick="testEmail()">Send test email</button></div></div>
-          <h3 style="margin-top:18px">Follow-ups</h3><div class="row"><div><label>Enabled<select id="fuOn"><option value="0">Off</option><option value="1">On</option></select></label></div><div><label>First after (days)<input id="fuFirst" type="number"></label></div><div><label>Max attempts<input id="fuMax" type="number"></label></div><div><label>Interval (days)<input id="fuInt" type="number"></label></div></div>
-          <h3 style="margin-top:18px">Website — Learn</h3><div class="row"><div><label>Website URL<input id="siteUrl" placeholder="https://your-site.com"></label></div><div style="flex:0 0 auto;padding-top:18px"><button class="btn primary" onclick="analyzeSite()">Analyze & Learn</button> <button class="btn ghost" onclick="previewGuide()">Preview Guide</button></div></div><div id="siteMsg" class="msg"></div><div id="siteGuidePreview" style="margin-top:10px"></div>
-          <h3 style="margin-top:18px">Assistant</h3><div class="row"><div><label>Name<input id="cfgName" placeholder="Stella"></label></div><div><label>Plan<div id="cfgPlanBadge" class="muted" style="padding:11px 0">—</div></label></div></div><label>Business description<textarea id="cfgDesc" placeholder="We are NOVA Style — shoes..."></textarea></label><label>Personality<input id="cfgPersonality" placeholder="friendly and practical"></label><label>Tone<input id="cfgTone" placeholder="friendly and helpful"></label><label>Instructions<textarea id="cfgInstructions" placeholder="Never invent prices..."></textarea></label><label>Welcome message<input id="cfgWelcome" placeholder="Hi! I'm Stella..."></label><label>Fallback<input id="cfgFallback" placeholder="I don't have verified info..."></label><div id="setMsg" class="msg"></div><button class="btn primary" onclick="saveSettings()">Save settings</button>
-        </section>
-        <section id="tab-custom_behaviour" class="tab card" style="display:none"><div id="cbPlanInfo" class="muted" style="margin-bottom:10px"></div><h3>Active Rules <span id="cbCount" class="muted"></span></h3><div id="cbList"></div><div id="cbEmpty" class="muted" style="display:none">No custom rules yet.</div><h3 style="margin-top:16px">Add Custom Rule</h3><div class="row"><div><label>Rule name<input id="cbName" placeholder="VIP Refund Handling"></label></div><div><label>Trigger<input id="cbTrigger" placeholder="refund, complaint, angry"></label></div></div><div class="row"><div><label>Pattern<select id="cbPattern"><option value="customer_support">Customer Support</option><option value="sales">Sales</option><option value="shopping_assistant">Shopping</option><option value="product_advisor">Product Advisor</option><option value="lead_qualification">Lead Qualification</option><option value="general_assistant">General</option></select></label></div><div><label>Type<select id="cbTriggerType"><option value="keyword">keyword</option><option value="situation">situation</option><option value="regex">regex</option></select></label></div><div><label>Priority<input id="cbPriority" type="number" value="5"></label></div></div><div class="row"><div><label>Tone<input id="cbTone" placeholder="empathetic, concise"></label></div><div><label>Weight<input id="cbBoost" type="number" value="1.5"></label></div></div><label>Instructions<textarea id="cbInstructions" placeholder="Always ask order ID first..."></textarea></label><button class="btn primary" onclick="addCustomBehaviour()">+ Add Rule (live instantly)</button><div id="cbMsg" class="msg"></div></section>
-        <section id="tab-followups" class="tab card" style="display:none"><h3>Scheduled follow-ups</h3><table><thead><tr><th>Customer</th><th>Email</th><th>Kind</th><th>Status</th><th>Attempts</th><th>Next send</th></tr></thead><tbody id="fuBody"></tbody></table></section>
-        <section id="tab-customers" class="tab card" style="display:none"><h3>Customers</h3><table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Created</th><th></th></tr></thead><tbody id="custBody"></tbody></table></section>
-        <section id="tab-addons" class="tab" style="display:none"><div class="card"><h3>Unified Brain</h3><p class="muted">One brain, 6 patterns — all plans have full access.</p></div><div id="addonList" class="card"></div><div id="addonMsg" class="msg"></div></section>
-        <section id="tab-chrono" class="tab card" style="display:none"><h3>Chrono — live availability</h3><div class="row"><div><label>Timezone<input id="chTimezone" placeholder="UTC"></label></div><div><label>Slot (min)<input id="chSlot" type="number"></label></div><div><label>Buffer<input id="chBuffer" type="number"></label></div><div><label>Notice<input id="chNotice" type="number"></label></div><div><label>Seats<input id="chSeats" type="number"></label></div></div><label>Hosts<input id="chHosts" placeholder="Alice, Bob"></label><div id="chWeekly"></div><button class="btn primary" onclick="saveChrono()">Save schedule</button><div id="chMsg" class="msg"></div><h3 style="margin-top:16px">Overrides</h3><div class="row"><div><label>Date<input id="ovDate" type="date"></label></div><div><label>Closed<select id="ovClosed"><option value="0">Open</option><option value="1">Closed</option></select></label></div><div><label>Open<input id="ovOpen" placeholder="10:00"></label></div><div><label>Close<input id="ovClose" placeholder="16:00"></label></div><div><label>Reason<input id="ovReason" placeholder="Holiday"></label></div><div style="flex:0 0 auto;padding-top:18px"><button class="btn ghost" onclick="addOverride()">Add</button></div></div><table><thead><tr><th>Date</th><th>Status</th><th>Hours</th><th></th></tr></thead><tbody id="ovBody"></tbody></table><h3 style="margin-top:16px">Live preview</h3><div id="chPreview" style="background:#0f172a;color:#e2e8f0;border-radius:10px;padding:12px;white-space:pre-wrap;min-height:70px"></div></section>
-        <section id="tab-voice" class="tab card" style="display:none"><h3>Echo — Voice</h3><div class="row"><div><label>Greeting<input id="voiceGreeting" placeholder="Hello, thank you for calling..."></label></div><div><label>Handoff phone<input id="voicePhone"></label></div></div><div class="row"><div><label>Handoff email<input id="voiceEmail" type="email"></label></div><div><label>Language<select id="voiceLang"><option value="en">en</option><option value="es">es</option><option value="fr">fr</option><option value="de">de</option><option value="auto">auto</option></select></label></div><div><label>Sidecar<input id="voiceSidecar" placeholder="http://127.0.0.1:8765"></label></div></div><label>Initial prompt<input id="voicePrompt" placeholder="NOVA Style..."></label><label><input type="checkbox" id="voiceWordTs" style="width:auto"> Word timestamps</label><button class="btn primary" onclick="saveVoice()">Save voice settings</button><div id="voiceMsg" class="msg"></div><h3 style="margin-top:16px">Recent calls</h3><table><thead><tr><th>Customer</th><th>Phone</th><th>Status</th><th>Lang</th><th>Handoff?</th></tr></thead><tbody id="voiceCallsBody"></tbody></table><h3 style="margin-top:16px">Recent transcripts</h3><table><thead><tr><th>Customer</th><th>Lang</th><th>Text</th></tr></thead><tbody id="voiceTxBody"></tbody></table></section>
-        <section id="tab-flags" class="tab card" style="display:none"><h3>Your enabled capabilities</h3><div id="flagList"></div></section>
-        <section id="tab-test" class="tab card" style="display:none"><h3>Test your agent</h3><div id="testChatLog" style="border:1px solid var(--line);border-radius:12px;padding:12px;height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;background:#fff"></div><div class="row" style="margin-top:10px"><input id="testChatInput" placeholder="Ask as customer..." style="flex:1" onkeydown="if(event.key==='Enter')sendTestChat()"><button class="btn primary" onclick="sendTestChat()">Send</button><button class="btn ghost" onclick="clearTestChat()">Clear</button></div><div id="testChatStatus" class="muted" style="margin-top:6px"></div></section>
+        <div class="page-head">
+          <h1 id="pTitle">Overview</h1>
+          <p id="pDesc" class="muted">Here's how your AI is performing.</p>
+          <div class="meta">
+            <span class="pill" id="lastUpdated" style="background:var(--surface)"><span class="dot ok"></span> Updated just now</span>
+          </div>
+        </div>
+
+        <section id="tab-overview" class="pane active"></section>
+        <section id="tab-agent" class="pane"></section>
+        <section id="tab-knowledge" class="pane"></section>
+        <section id="tab-behaviors" class="pane"></section>
+        <section id="tab-memory" class="pane"></section>
+        <section id="tab-customers" class="pane"></section>
+        <section id="tab-conversations" class="pane"></section>
+        <section id="tab-followups" class="pane"></section>
+        <section id="tab-website" class="pane"></section>
+        <section id="tab-voice" class="pane"></section>
+        <section id="tab-schedule" class="pane"></section>
+        <section id="tab-integrations" class="pane"></section>
+        <section id="tab-business" class="pane"></section>
+        <section id="tab-preferences" class="pane"></section>
+        <section id="tab-account" class="pane"></section>
       </main>
     </div>
   </div>
 </div>
+
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+<script src="/portal/portal.js"></script>
 <script>
-const API = location.origin;
-let TOKEN = sessionStorage.getItem("nova_portal_token") || "";
-let ME = null;
-function api(method, path, body) {
-  return fetch(API + "/api/portal" + path, {
-    method, headers: { "content-type": "application/json", ...(TOKEN ? { authorization: "Bearer " + TOKEN } : {}) },
-    body: body ? JSON.stringify(body) : undefined,
-  }).then(async r => {
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(data.error?.message || ("HTTP " + r.status));
-    return data;
-  });
-}
-function show(id, on) { const el=document.getElementById(id); if(el){ el.classList.toggle("hidden", !on); el.style.display = on ? "" : "none"; } }
-function msg(id, text, ok) { const el = document.getElementById(id); if(!el) return; el.textContent = text; el.className = "msg " + (ok ? "ok" : "bad"); setTimeout(() => (el.className = "msg"), 4000); }
-async function login() {
-  try {
-    const r = await api("POST", "/auth/login", { email: liEmail.value.trim(), password: liPass.value });
-    TOKEN = r.token; sessionStorage.setItem("nova_portal_token", TOKEN);
-    ME = await api("GET", "/me");
-    enter();
-  } catch (e) { msg("loginMsg", e.message, false); }
-}
-function logout() { sessionStorage.removeItem("nova_portal_token"); location.reload(); }
-const TABS = [["overview","Overview"],["knowledge","Knowledge","knowledge_edit"],["settings","Settings","edit_contact"],["custom_behaviour","Behaviour"],["addons","Brain"],["chrono","Schedule"],["voice","Voice"],["test","Test Chat"],["followups","Follow-ups","edit_followup"],["customers","Customers","view_customers"],["flags","Capabilities"]];
-const TAB_ICONS = {overview:"◉",knowledge:"▭",settings:"⚙",custom_behaviour:"✦",addons:"⬢",chrono:"◷",voice:"◍",test:"💬",followups:"✉",customers:"◯",flags:"⚑"};
-const TAB_GROUPS = {"OVERVIEW":[["overview","Overview"]],"BUILD":[["knowledge","Knowledge"],["custom_behaviour","Behaviour"]],"CONFIGURE":[["settings","Settings"],["addons","Brain"],["chrono","Schedule"],["voice","Voice"]],"ENGAGE":[["test","Test Chat"],["followups","Follow-ups"],["customers","Customers"]],"ACCOUNT":[["flags","Capabilities"]]};
-function enter() {
-  show("loginView", false); show("appView", true);
-  document.getElementById("whoami").textContent = ME.user.email + " · " + ME.business.name;
-  document.getElementById("pcrumbBiz").textContent = ME.business.name;
-  document.getElementById("planBadge").textContent = (ME.plan||"launch") + " · " + (ME.brain||"unified");
-  const nav = document.getElementById("tabs"); nav.innerHTML = "";
-  const allowed = new Set(TABS.filter(t => !t[2] || ME.flags[t[2]]).map(t=>t[0]));
-  let first=true;
-  for(const [group, items] of Object.entries(TAB_GROUPS)){
-    const filtered = items.filter(([id])=> allowed.has(id));
-    if(!filtered.length) continue;
-    const g=document.createElement("div"); g.style.marginBottom="16px";
-    const title=document.createElement("div"); title.textContent=group; title.style.cssText="font-family:JetBrains Mono,monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#64748b;padding:6px 10px 8px"; g.appendChild(title);
-    filtered.forEach(([id,label])=>{
-      const b=document.createElement("button");
-      b.className="nav-item" + (first?" on":"");
-      b.dataset.tab=id;
-      b.innerHTML='<span class="nav-ic">'+(TAB_ICONS[id]||"•")+'</span> ' + label;
-      b.onclick=()=>selectTab(id);
-      g.appendChild(b);
-      first=false;
-    });
-    nav.appendChild(g);
-  }
-  selectTab("overview"); loadOverview(); loadFlags();
-}
-function selectTab(id) {
-  document.querySelectorAll("#tabs .nav-item").forEach(b => b.classList.toggle("on", b.dataset.tab === id));
-  document.querySelectorAll(".tab").forEach(s => (s.style.display = "none"));
-  show("tab-" + id, true);
-  document.getElementById("pcrumbTab").textContent = (TABS.find(x=>x[0]===id)?.[1]||id);
-  document.getElementById("pTitle").textContent = (TABS.find(x=>x[0]===id)?.[1]||id);
-  if (id === "overview") loadOverview();
-  if (id === "knowledge") loadKnowledge();
-  if (id === "settings") loadSettings();
-  if (id === "addons") loadAddons();
-  if (id === "chrono") loadChrono();
-  if (id === "voice") loadVoice();
-  if (id === "test") initTestChat();
-  if (id === "followups") loadFollowUps();
-  if (id === "customers") loadCustomers();
-  if (id === "custom_behaviour") loadCustomBehaviour();
-}
-let cbCache={rules:[],maxRules:0,plan:"launch"};
-async function loadCustomBehaviour(){try{const d=await api("GET","/agent-behaviour");const ab=d.agentBehaviour||{rules:[]};cbCache={rules:ab.rules||[],maxRules:ab.maxRules??0,plan:d.plan||"launch"};renderCustomBehaviour()}catch(e){document.getElementById("cbList").innerHTML='<span style="color:#dc2626">'+e.message+'</span>'}}
-function renderCustomBehaviour(){const r=cbCache.rules||[];document.getElementById("cbCount").textContent='('+r.length+')';document.getElementById("cbPlanInfo").textContent=cbCache.plan+' plan';let h='';if(!r.length)h='<div style="padding:12px;text-align:center;border:1px dashed #e2e8f0;border-radius:10px;color:#64748b">No custom rules yet.</div>';else h='<table><thead><tr><th>Name</th><th>Trigger</th><th>Pattern</th><th>Priority</th><th></th></tr></thead><tbody>'+r.map(x=>'<tr><td><b>'+x.name+'</b></td><td><code style="background:#f1f5f9;padding:2px 6px;border-radius:6px">'+x.trigger+'</code></td><td>'+(x.primaryPattern||'')+'</td><td>'+(x.priority||5)+'</td><td><button class="btn ghost" onclick="deleteCustomBehaviour(\''+x.id+'\')">✕</button></td></tr>').join('')+'</tbody></table>';document.getElementById("cbList").innerHTML=h}
-async function addCustomBehaviour(){const t=document.getElementById("cbTrigger").value.trim();if(!t){msg("cbMsg","Trigger required",false);return}const rule={id:"rule_"+Math.random().toString(36).slice(2,6),name:document.getElementById("cbName").value.trim()||"Behaviour",trigger:t,triggerType:document.getElementById("cbTriggerType").value,primaryPattern:document.getElementById("cbPattern").value,tone:document.getElementById("cbTone").value.trim(),instructions:document.getElementById("cbInstructions").value.trim(),priority:parseInt(document.getElementById("cbPriority").value)||5,weightBoost:parseFloat(document.getElementById("cbBoost").value)||1.5,enabled:true};const n=cbCache.rules.slice();n.push(rule);try{const res=await api("PUT","/agent-behaviour",{rules:n});cbCache.rules=res.agentBehaviour.rules||n;msg("cbMsg","Added",true);renderCustomBehaviour()}catch(e){msg("cbMsg",e.message,false)}}
-async function deleteCustomBehaviour(id){if(!confirm("Delete?"))return;try{const res=await api("DELETE","/agent-behaviour/"+encodeURIComponent(id));cbCache.rules=res.agentBehaviour.rules||cbCache.rules.filter(r=>r.id!==id);renderCustomBehaviour()}catch(e){const n=cbCache.rules.filter(r=>r.id!==id);try{const r2=await api("PUT","/agent-behaviour",{rules:n});cbCache.rules=r2.agentBehaviour.rules||n;renderCustomBehaviour()}catch(e2){msg("cbMsg",e2.message,false)}}}
-async function loadOverview(){const d=await api("GET","/analytics");const w=d.week||{};document.getElementById("weekStats").innerHTML=[ [w.chats??0,"chats"],[w.leads??0,"leads"],[w.purchases??0,"purchases"],["$"+((w.attributedRevenueCents||0)/100).toFixed(2),"revenue"],[w.followUpEmailsSent??0,"emails"]].map(([v,l])=>'<div class="stat"><b>'+v+'</b><span>'+l+'</span></div>').join("");const s=d.summary||{};document.getElementById("allStats").innerHTML=Object.entries(s.counts||{}).map(([k,v])=>'<div class="stat"><b>'+v+'</b><span>'+k+'</span></div>').join("")}
-async function loadKnowledge(){const d=await api("GET","/knowledge");document.getElementById("knTable").querySelector("tbody").innerHTML=(d.items||[]).map(k=>'<tr><td>'+k.title+'</td><td>'+k.knowledge_type+'</td><td>'+(k.content||"").slice(0,90)+'</td><td><button class="btn ghost" onclick="delKnowledge(\''+k.knowledge_id+'\')">✕</button></td></tr>').join("")}
-async function addKnowledge(){try{await api("POST","/knowledge",{title:knTitle.value,knowledgeType:knType.value,content:knContent.value});msg("knMsg","Added",true);knTitle.value="";knContent.value="";loadKnowledge()}catch(e){msg("knMsg",e.message,false)}}
-async function delKnowledge(id){await api("DELETE","/knowledge/"+id);loadKnowledge()}
-function parseBulkInput(t){t=(t||'').trim();if(!t)return[];if(t.startsWith('[')){try{const a=JSON.parse(t);if(Array.isArray(a))return a.map(o=>({title:o.title,content:o.content,knowledgeType:o.knowledgeType||o.type||'faq'}))}catch(e){}}return t.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{const f=line.indexOf(','),s=line.indexOf(',',f+1);if(f===-1||s===-1)return null;return{title:line.slice(0,f).trim(),knowledgeType:line.slice(f+1,s).trim()||'faq',content:line.slice(s+1).trim()}}).filter(Boolean)}
-async function bulkKnowledge(){const items=parseBulkInput(knBulk.value);if(!items.length){msg('knBulkMsg','Nothing to import',false);return}try{const r=await api('POST','/knowledge/bulk',{items});msg('knBulkMsg','Imported '+r.total,false);knBulk.value='';loadKnowledge()}catch(e){msg('knBulkMsg',e.message,false)}}
-async function searchKnowledge(){const q=knSearchQ.value.trim();if(!q){knSearchResults.innerHTML='<span class="muted">Enter query</span>';return}try{const d=await api('GET','/knowledge/search?q='+encodeURIComponent(q));if(!d.items||!d.items.length){knSearchResults.innerHTML='<span class="muted">No matches</span>';return}knSearchResults.innerHTML=d.items.map(k=>'<div style="border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-bottom:8px"><b>'+k.title+'</b><br><span class="muted">'+k.content.slice(0,120)+'</span></div>').join("")}catch(e){knSearchResults.innerHTML='<span style="color:#dc2626">'+e.message+'</span>'}}
-async function loadSettings(){const me=await api("GET","/me");const s=me.settings;const a=s.assistant||me.assistant||{};sEmail.value=s.contactEmail;sPhone.value=s.contactPhone;sHours.value=s.businessHours;smtpHost.value=s.smtpHost;smtpPort.value=s.smtpPort||587;smtpUser.value=s.smtpUser;cfgWelcome.value=a.welcomeMessage||"";cfgTone.value=a.tone||"";if(cfgName)cfgName.value=a.name||"";if(cfgDesc)cfgDesc.value=a.businessDescription||"";if(cfgPersonality)cfgPersonality.value=a.personality||"";if(cfgInstructions)cfgInstructions.value=a.instructions||"";if(cfgFallback)cfgFallback.value=a.fallbackMessage||"";fuOn.value=s.followUp.enabled?"1":"0";fuFirst.value=s.followUp.firstDays;fuMax.value=s.followUp.maxAttempts;fuInt.value=s.followUp.intervalDays}
-async function saveSettings(){try{const b={contactEmail:sEmail.value.trim(),contactPhone:sPhone.value.trim(),businessHours:sHours.value,smtpHost:smtpHost.value,smtpPort:Number(smtpPort.value)||587,smtpUser:smtpUser.value,smtpFromName:smtpFrom.value,enabled:fuOn.value==="1",firstDays:Number(fuFirst.value)||0,maxAttempts:Number(fuMax.value)||3,intervalDays:Number(fuInt.value)||2,welcomeMessage:cfgWelcome.value,tone:cfgTone.value,assistant:{name:cfgName.value.trim(),businessDescription:cfgDesc.value.trim(),personality:cfgPersonality.value.trim(),instructions:cfgInstructions.value.trim(),tone:cfgTone.value.trim(),welcomeMessage:cfgWelcome.value.trim(),fallbackMessage:cfgFallback.value.trim()}};if(smtpPass.value)b.smtpPassword=smtpPass.value;await api("PUT","/settings",b);await api("PUT","/follow-up-config",{enabled:fuOn.value==="1",firstDays:+fuFirst.value,maxAttempts:+fuMax.value,intervalDays:+fuInt.value});msg("setMsg","Saved",true)}catch(e){msg("setMsg",e.message,false)}}
-async function testEmail(){try{const r=await api("POST","/settings/test-email",{});msg("setMsg",r.sent?"Sent":"Failed",r.sent)}catch(e){msg("setMsg",e.message,false)}}
-async function loadFollowUps(){const d=await api("GET","/follow-ups");document.getElementById("fuBody").innerHTML=(d.jobs||[]).map(j=>'<tr><td>'+j.customer_id+'</td><td>'+j.email+'</td><td>'+j.kind+'</td><td>'+j.status+'</td><td>'+j.attempts+'/'+j.max_attempts+'</td><td>'+(j.next_send_at?new Date(j.next_send_at).toLocaleDateString():"—")+'</td></tr>').join("")||'<tr><td colspan="6">None</td></tr>'}
-async function loadCustomers(){const d=await api("GET","/customers");document.getElementById("custBody").innerHTML=(d.customers||[]).map(c=>'<tr><td>'+c.customerId+'</td><td>'+(c.name||"—")+'</td><td>'+(c.email||"—")+'</td><td>'+new Date(c.createdAt).toLocaleDateString()+'</td><td><button class="btn ghost" onclick="eraseCust(\''+c.customer_id+'\')">Erase</button></td></tr>').join("")}
-async function eraseCust(id){if(!confirm("Erase?"))return;await api("DELETE","/customers/"+encodeURIComponent(id));loadCustomers()}
-async function loadFlags(){const me=await api("GET","/me");document.getElementById("flagList").innerHTML=Object.entries(me.flags).map(([k,v])=>'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #e2e8f0"><span>'+k+'</span><span style="color:'+(v?"#059669":"#64748b")+'">'+(v?"on":"off")+'</span></div>').join("")}
-async function analyzeSite(){const u=document.getElementById("siteUrl").value.trim();if(!/^https?:\/\//i.test(u)){msg("siteMsg","Provide https:// URL",false);return}try{const r=await api("POST","/site/analyze",{siteUrl:u});msg("siteMsg","Learned "+r.products.length+" products",true)}catch(e){msg("siteMsg",e.message,false)}}
-async function previewGuide(){try{const r=await api("GET","/site/guide");msg("siteMsg",r.guide?"Guide loaded":"No guide",!!r.guide)}catch(e){msg("siteMsg",e.message,false)}}
-async function loadAddons(){const ad=await api("GET","/addons").catch(()=>({addons:[]}));document.getElementById("addonList").innerHTML=(ad.addons||[]).map(a=>'<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #e2e8f0"><div><b>'+(a.meta?.label||a.key)+'</b><br><span class="muted">'+(a.meta?.description||"")+'</span></div><label style="display:flex;align-items:center"><input type="checkbox" '+(a.enabled?"checked":"")+' onchange="toggleAddon(\''+a.key+'\',this.checked)"> <span style="margin-left:8px">'+(a.enabled?"On":"Off")+'</span></label></div>').join("")||'<span class="muted">No add-ons</span>'}
-async function toggleAddon(k,v){try{await api("PUT","/addons/"+k,{enabled:v});loadAddons()}catch(e){alert(e.message)}}
-let testConvId=null,testHistory=[];function appendTest(r,t){const l=document.getElementById('testChatLog');const d=document.createElement('div');d.style.cssText=r==='user'?'align-self:flex-end;background:#6d28d9;color:#fff;border-radius:12px;padding:8px 12px;max-width:80%':'align-self:flex-start;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:8px 12px;max-width:80%';d.textContent=t;l.appendChild(d);l.scrollTop=l.scrollHeight}
-function initTestChat(){if(testHistory.length===0)appendTest('assistant','Hi! Ask me anything.')}
-async function sendTestChat(){const i=document.getElementById('testChatInput');const t=i.value.trim();if(!t)return;appendTest('user',t);i.value="";testHistory.push({role:'user',content:t});try{const r=await api('POST','/chat/test',{message:t,conversationId:testConvId,messages:testHistory.slice(-20)});testConvId=r.conversationId;appendTest('assistant',r.reply);testHistory.push({role:'assistant',content:r.reply})}catch(e){appendTest('assistant','Error:'+e.message)}}
-function clearTestChat(){testConvId=null;testHistory=[];document.getElementById('testChatLog').innerHTML="";initTestChat()}
-async function loadChrono(){const d=await api("GET","/chrono/schedule");const s=d.schedule;chTimezone.value=s.timezone||"UTC";chSlot.value=s.slotDuration;chBuffer.value=s.bufferMinutes;chNotice.value=s.minNoticeMinutes;chSeats.value=s.maxSeatsPerSlot||1;chHosts.value=(s.hosts||[]).map(h=>h.name).join(", ");let h='';for(const day of ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"]){const v=(s.weekly&&s.weekly[day]||[]).map(b=>b.start+"-"+b.end).join(", ");h+='<div class="row"><div style="min-width:90px"><label>'+day+'</label></div><div><input data-day="'+day+'" value="'+v+'" placeholder="09:00-17:00"></div></div>'}document.getElementById("chWeekly").innerHTML=h;document.getElementById("ovBody").innerHTML=(d.overrides||[]).map(o=>'<tr><td>'+o.date+'</td><td>'+(o.is_closed?"Closed":"Open")+'</td><td>'+o.open_time+' - '+o.close_time+'</td><td><button class="btn ghost" onclick="delOverride(\''+o.override_id+'\')">✕</button></td></tr>').join("")}
-async function saveChrono(){try{const hosts=document.getElementById('chHosts').value.split(',').map(s=>s.trim()).filter(Boolean).map(n=>({name:n}));await api("PUT","/chrono/schedule",{timezone:chTimezone.value,slotDuration:+chSlot.value,bufferMinutes:+chBuffer.value,minNoticeMinutes:+chNotice.value,maxSeatsPerSlot:+chSeats.value,hosts,weekly:parseWeekly()});loadChrono()}catch(e){alert(e.message)}}
-function parseWeekly(){const w={};document.querySelectorAll("#chWeekly input[data-day]").forEach(el=>{const d=el.dataset.day, r=el.value.trim();if(!r)w[d]=[];else w[d]=r.split(",").map(s=>s.trim()).map(p=>{const [a,b]=p.split("-");return{start:a.trim(),end:b.trim()}})});return w}
-async function addOverride(){try{await api("POST","/chrono/overrides",{date:ovDate.value,isClosed:ovClosed.value==="1",openTime:ovOpen.value,closeTime:ovClose.value,reason:ovReason.value});loadChrono()}catch(e){alert(e.message)}}
-async function delOverride(id){await api("DELETE","/chrono/overrides/"+id);loadChrono()}
-async function loadVoice(){const d=await api("GET","/voice/settings");voiceGreeting.value=d.call?.greetingTemplate||"";voicePhone.value=d.call?.handoffPhone||"";voiceEmail.value=d.call?.handoffEmail||"";voiceLang.value=d.echo?.defaultLanguage||"en";voiceSidecar.value=d.echo?.sidecarUrl||"";voicePrompt.value=d.echo?.initialPrompt||"";voiceWordTs.checked=!!d.echo?.wordTimestamps}
-async function saveVoice(){try{await api("PUT","/voice/settings",{greetingTemplate:voiceGreeting.value,handoffPhone:voicePhone.value,handoffEmail:voiceEmail.value,defaultLanguage:voiceLang.value,sidecarUrl:voiceSidecar.value,initialPrompt:voicePrompt.value,wordTimestamps:voiceWordTs.checked});loadVoice()}catch(e){alert(e.message)}}
-if(TOKEN){api("GET","/me").then(m=>{ME=m;enter()}).catch(()=>logout())}
-document.getElementById("pOpen")?.addEventListener("click",()=>document.getElementById("psidebar").classList.add("open"));
-document.getElementById("pClose")?.addEventListener("click",()=>document.getElementById("psidebar").classList.remove("open"));
+(function(){
+  // Last updated tick
+  setInterval(function(){ var el=document.getElementById("lastUpdated"); if(el) el.innerHTML='<span class="dot ok"></span> Updated '+new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}); }, 60000);
+})();
 </script>
 </body>
 </html>
