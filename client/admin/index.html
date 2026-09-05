@@ -36,10 +36,10 @@
       <h2 id="authTitle">Sign in to NOVA</h2>
       <p class="muted">Use your work email. First account becomes workspace owner.</p>
       <form id="loginForm" class="form">
-        <label for="authEmail">Work email
+        <label>Work email
           <input type="email" id="authEmail" autocomplete="username" required placeholder="you@company.com" aria-label="Work email">
         </label>
-        <label for="authPassword">Password
+        <label>Password
           <input type="password" id="authPassword" autocomplete="current-password" required placeholder="••••••••" aria-label="Password">
         </label>
         <button type="submit" class="btn primary wide">Continue →</button>
@@ -47,13 +47,13 @@
         <p class="switch">No account? <button type="button" id="showRegister" class="linklike">Create one</button></p>
       </form>
       <form id="registerForm" class="form hidden">
-        <label for="regName">Full name
+        <label>Full name
           <input type="text" id="regName" autocomplete="name" placeholder="Ada Lovelace" aria-label="Full name">
         </label>
-        <label for="regEmail">Work email
+        <label>Work email
           <input type="email" id="regEmail" autocomplete="email" required placeholder="ada@company.com" aria-label="Work email">
         </label>
-        <label for="regPassword">Password <span>— at least 8 characters</span>
+        <label>Password <span>— at least 8 characters</span>
           <input type="password" id="regPassword" minlength="8" autocomplete="new-password" required placeholder="••••••••" aria-label="Password">
         </label>
         <div class="hint">First account is super admin. You can invite others after.</div>

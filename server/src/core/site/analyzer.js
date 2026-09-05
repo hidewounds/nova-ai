@@ -85,6 +85,132 @@ function inferSiteType(html, url) {
   return "general";
 }
 
+async function extractTheme(html, siteUrl) {
+  // deeper UI improvisation — widget learns design system so it sits well with site
+  const theme = {
+    primary: null,
+    secondary: null,
+    background: null,
+    surface: null,
+    text: null,
+    muted: null,
+    border: null,
+    fontFamily: null,
+    headingFont: null,
+    radius: null,
+    radiusLg: null,
+    shadow: null,
+    spacing: null,
+    darkMode: null,
+    customerBase: null,
+    updatedAt: Date.now(),
+    siteUrl,
+  };
+  // restricted: never learn from admin/login/checkout with sensitive inputs
+  const lower = html.toLowerCase();
+  const isRestricted = /\/admin|\/login|\/checkout.*password|\/portal/.test(lower) && /type=.password/i.test(html);
+  if (isRestricted) {
+    // skip sensitive — return minimal theme without learning restricted content
+    return { ...theme, restricted: true, note: "skipped restricted" };
+  }
+  // primary color: meta theme-color > css variable --violet --primary > first hex in <style>
+  const metaTheme = html.match(/<meta[^>]*name=["']theme-color["'][^>]*content=["']([^"']+)["']/i);
+  if (metaTheme) theme.primary = metaTheme[1].trim();
+  if (!theme.primary) {
+    const cssVars = html.match(/--(?:primary|violet|accent|brand)[^:]*:\s*([^;\s]+)/i);
+    if (cssVars) theme.primary = cssVars[1].trim();
+  }
+  if (!theme.primary) {
+    const hexes = html.match(/#[0-9a-f]{3,6}\b/gi);
+    // pick most frequent hex that's not bg/white/black — brand is usually violet #8b5cf6
+    if (hexes) {
+      const freq = {};
+      const skip = { "#fff":1, "#ffffff":1, "#000":1, "#000000":1, "#050508":1, "#080a14":1, "#0b0e1a":1, "#0f1221":1, "#f1f5f9":1 };
+      hexes.forEach(function (h) {
+        const c = h.toLowerCase();
+        if (skip[c]) return;
+        // skip too light/dark desaturated
+        freq[c] = (freq[c] || 0) + 1;
+      });
+      let best = null, bestCount = 0;
+      for (const k in freq) if (freq[k] > bestCount) { bestCount = freq[k]; best = k; }
+      if (best) theme.primary = best;
+    }
+  }
+  // fetch linked CSS for brand color if still not found (fetch nova.css)
+  if (!theme.primary || theme.primary === "#050508") {
+    try {
+      const cssUrl = new URL("/nova.css", siteUrl).toString();
+      // try fetch css — best effort, ignore errors
+      const cssText = await fetchWithTimeout(cssUrl, 4000).catch(function(){ return ""; });
+      if (cssText) {
+        const m = cssText.match(/--violet[^:]*:\s*([^;\s]+)/i) || cssText.match(/--primary[^:]*:\s*([^;\s]+)/i);
+        if (m) theme.primary = m[1].trim();
+        if (!theme.primary || theme.primary === "#050508") {
+          const hex2 = cssText.match(/#8b5cf6|#6366f1|#a78bfa/gi);
+          if (hex2 && hex2[0]) theme.primary = hex2[0];
+        }
+      }
+    } catch {}
+  }
+  if (!theme.primary) theme.primary = siteUrl && siteUrl.includes("nova") ? "#8b5cf6" : "#6366f1";
+  // deeper UI — background, surface, text, muted, border, fonts, radius, shadow, spacing, dark/light
+  const bgMatch = html.match(/body[^}]*background[^:]*:\s*([^;}\n]+)/i) || html.match(/--bg[^:]*:\s*([^;\s]+)/i);
+  if (bgMatch) theme.background = bgMatch[1].trim().slice(0, 30);
+  // try fetch CSS for deeper tokens (only if siteUrl available)
+  let cssText = "";
+  try {
+    const cssUrl = new URL("/nova.css", siteUrl).toString();
+    cssText = await fetchWithTimeout(cssUrl, 3500).catch(function(){ return ""; }) || "";
+  } catch {}
+  const combined = html + "\n" + cssText;
+  // secondary / accent
+  const secMatch = combined.match(/--(?:secondary|cyan|blue)\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]+\)|[a-z]+)/i);
+  if (secMatch) theme.secondary = secMatch[1].trim().slice(0, 20);
+  const surfMatch = combined.match(/--surface\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]+\)|[a-z]+)/i) || combined.match(/--surface-2\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]+\)|[a-z]+)/i);
+  if (surfMatch) theme.surface = surfMatch[1].trim().slice(0, 30);
+  const textMatch = combined.match(/--text\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]+\)|[a-z]+)/i);
+  if (textMatch) theme.text = textMatch[1].trim().slice(0, 20);
+  const mutedMatch = combined.match(/--mut\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]+\)|[a-z]+)/i);
+  if (mutedMatch) theme.muted = mutedMatch[1].trim().slice(0, 20);
+  const borderMatch = combined.match(/--line\s*:\s*(#[0-9a-f]{3,8}|rgba?\([^)]+\)|[a-z]+)/i);
+  if (borderMatch) theme.border = borderMatch[1].trim().slice(0, 30);
+  // fonts — heading vs body
+  const fontMatch = combined.match(/font-family\s*:\s*([^;}\n]+)/i);
+  if (fontMatch) theme.fontFamily = stripTags(fontMatch[1]).split(",")[0].replace(/['"]/g, "").trim().slice(0, 30);
+  const headingFontMatch = combined.match(/h1[^}]*font-family[^:]*:\s*([^;}\n]+)/i) || combined.match(/--heading[^:]*:\s*([^;\s]+)/i);
+  if (headingFontMatch) theme.headingFont = stripTags(headingFontMatch[1]).split(",")[0].replace(/['"]/g, "").trim().slice(0, 30);
+  // radius
+  const radiusMatch = combined.match(/border-radius\s*:\s*([^;\s]+)/i) || combined.match(/--r[^:]*:\s*([^;\s]+)/i);
+  if (radiusMatch) theme.radius = radiusMatch[1].trim().slice(0, 12);
+  const radiusLgMatch = combined.match(/--r-lg[^:]*:\s*([^;\s]+)/i);
+  if (radiusLgMatch) theme.radiusLg = radiusLgMatch[1].trim().slice(0, 12);
+  // shadow
+  const shadowMatch = combined.match(/--shadow[^:]*:\s*([^;]+);/i) || combined.match(/box-shadow\s*:\s*([^;}\n]+)/i);
+  if (shadowMatch) theme.shadow = shadowMatch[1].trim().slice(0, 60);
+  // spacing
+  const gapMatch = combined.match(/gap\s*:\s*([^;\s]+)/i) || combined.match(/--gap[^:]*:\s*([^;\s]+)/i);
+  if (gapMatch) theme.spacing = gapMatch[1].trim().slice(0, 12);
+  // darkMode — site is dark if bg is #050508 or dark
+  theme.darkMode = /#050508|#080a14|#0b0e1a|background:\s*#0|dark/i.test(combined.slice(0,5000)) ? true : false;
+  // customer base inference — who site serves, not restricted personal data
+  const text = stripTags(html).toLowerCase().slice(0, 8000);
+  if (/shoe|fashion|apparel|sneaker/.test(text)) theme.customerBase = "fashion shoppers — size, budget, style";
+  else if (/saas|platform|ai employee|subscription/.test(text)) theme.customerBase = "business owners — efficiency, ROI, trials";
+  else if (/restaurant|food|menu/.test(text)) theme.customerBase = "diners — time, location, cravings";
+  else if (/booking|appointment|consult/.test(text)) theme.customerBase = "clients — time slots, urgency";
+  else theme.customerBase = "general visitors — curiosity, quick answers";
+  // never store restricted personal data, only aggregated style
+  return theme;
+}
+
+function inferCustomerBase(html) {
+  const t = stripTags(html).toLowerCase();
+  if (/shoe|sneaker|fashion/.test(t)) return "fashion";
+  if (/saas|ai employee|platform/.test(t)) return "business";
+  return "general";
+}
+
 function buildGuideSteps({ siteUrl, siteType, html }) {
   const steps = [];
   const has = (sel) => {
@@ -157,13 +283,22 @@ async function analyzeSite({ businessId, siteUrl }) {
   // 2. Build guide steps
   const steps = buildGuideSteps({ siteUrl, siteType, html });
 
+  // 2b. Learn theme & customer base — widget improves with site, except restricted
+  const theme = await extractTheme(html, siteUrl);
+  const customerBase = theme.customerBase || inferCustomerBase(html);
+
   // 3. Persist site analysis for widget (in business_configs or separate table via guide store)
   const guideStore = require("../guide/store");
-  const guide = guideStore.saveGuide({ businessId, siteUrl, siteType, title, description, steps, products, faqs, knowledgeCreated: created.length });
-  // 4. Remember linked site URL in config (human-like: agent remembers its website)
+  const guide = guideStore.saveGuide({ businessId, siteUrl, siteType, title, description, steps, products, faqs, knowledgeCreated: created.length, theme, customerBase });
+  // also persist theme for widget adapter (so widget can fetch even without guide)
   try {
     const cfg = require("../config/service");
-    cfg.updateConfig(businessId, { site: { url: siteUrl, lastAnalyzedAt: Date.now() } });
+    cfg.updateConfig(businessId, { site: { url: siteUrl, lastAnalyzedAt: Date.now(), theme, customerBase } });
+  } catch {}
+  // also save to dedicated theme store for widget (fast path)
+  try {
+    const themeStore = require("../theme/store");
+    themeStore.saveTheme(businessId, theme);
   } catch {}
 
   return {
@@ -177,6 +312,8 @@ async function analyzeSite({ businessId, siteUrl }) {
     steps,
     knowledgeCreated: created.length,
     guide,
+    theme,
+    customerBase,
   };
 }
 

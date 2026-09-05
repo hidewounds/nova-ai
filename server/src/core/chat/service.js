@@ -47,7 +47,8 @@ function isBusinessRelated(query, knowledge, config) {
         "nova","platform","subscription","launch","growth","scale","unlimited",
         "pricing","price","plan","feature","role","booking","appointment","widget","chrono","echo","guide","tour","show me","operate","site","website","sell","selling","buy","buying","product","products","catalog","shop","store","offer","stock","have","available",
         "nimbus","aerobuds","sport pulse","consultation","demo","billing","checkout","schedule","availability","available","slot","slots","book",
-        "account","transfer","refund","enterprise","custom","human"
+        "account","transfer","refund","enterprise","custom","human",
+        "shoe","shoes","sneaker","sneakers","jordan","yeezy","dunk","adidas","nike","mugshot","tee","apparel","streetwear","crepdog","crew"
     ];
     for (const kw of distinctiveKeywords) {
         if (q.includes(kw)) return true;
@@ -63,13 +64,19 @@ function isBusinessRelated(query, knowledge, config) {
     // also consider business name if distinctive (>3 chars and not generic)
     const bName = String(config?.assistant?.name || "").toLowerCase().trim();
     if (bName && bName.length >= 3 && bName !== "nova" && q.includes(bName)) return true;
-    // do NOT auto-treat any retrieved knowledge as related — generic knowledge matches on "the"/"what" would make every query seem related
-    // Only treat as related if knowledge contains distinctive business terms
+    // also treat as related if any retrieved knowledge shares a significant word with query (generic, not just distinctive)
+    // this handles product names like "mugshot", "jordan" for Crepdog, or any business-specific terms
     if (Array.isArray(knowledge) && knowledge.length > 0) {
+        const qWords = q.split(/\W+/).filter(function(w){ return w.length > 3; });
         for (const k of knowledge) {
             const title = String(k.title || "").toLowerCase();
-            const content = String(k.content || "").toLowerCase().slice(0, 400);
+            const content = String(k.content || "").toLowerCase().slice(0, 600);
             const combined = title + " " + content;
+            // if any query word appears in knowledge, it's related
+            for (const w of qWords) {
+                if (w.length > 3 && combined.includes(w)) return true;
+            }
+            // also keep distinctive check as fallback
             for (const kw of distinctiveKeywords) {
                 if (combined.includes(kw) && q.includes(kw)) return true;
             }

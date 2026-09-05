@@ -70,7 +70,8 @@ function publicUser(row) {
 
 function registerPortalUser({ businessId, email, password }) {
     if (!businessId) throw badRequest("businessId is required.");
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw badRequest("A valid email is required.");
+    const cleanEmail = String(email || "").trim().toLowerCase();
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) throw badRequest("A valid email is required.");
     if (!password || String(password).length < 8) throw badRequest("Password must be at least 8 characters.");
 
     const existsBusiness = db().prepare("SELECT 1 FROM businesses WHERE business_id = ?").get(businessId);
@@ -81,7 +82,7 @@ function registerPortalUser({ businessId, email, password }) {
     db().prepare(
         `INSERT INTO portal_users (portal_uid, business_id, email, password_hash, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?)`
-    ).run(uid, businessId, String(email).toLowerCase(), libCrypto.hashPassword(password), t, t);
+    ).run(uid, businessId, cleanEmail, libCrypto.hashPassword(password), t, t);
 
     return getPortalUserByUid(uid);
 }
@@ -93,9 +94,11 @@ function getPortalUserByUid(uid) {
 
 function verifyCredentials({ email, password }) {
     if (!email || !password) throw badRequest("Email and password are required.");
+    const cleanEmail = String(email).trim().toLowerCase();
+    if (!cleanEmail) throw badRequest("Email and password are required.");
     const row = db()
         .prepare("SELECT * FROM portal_users WHERE email = ? COLLATE NOCASE AND active = 1")
-        .get(String(email).toLowerCase());
+        .get(cleanEmail);
     if (!row || !libCrypto.verifyPassword(password, row.password_hash)) {
         throw unauthorized("Invalid portal credentials.", "portal_credentials_invalid");
     }

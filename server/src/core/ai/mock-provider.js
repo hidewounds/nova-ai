@@ -45,6 +45,7 @@ async function chat({ messages, model, baseUrl, apiKey: passedApiKey, temperatur
     }
     // pure greeting — short, keep attention
     const pureGreeting = text.replace(/[!.,?]+$/g, "").trim();
+    const isCrepdog = fullSystem.toLowerCase().includes("crepdog") || knowledgeSection.toLowerCase().includes("crepdog");
     if (/^(hi|hello|hey|hola|howdy|hey there|hi there|hello there|how are you)$/i.test(pureGreeting) || /^(hi|hello|hey) nova$/i.test(pureGreeting)) {
         return { content: "Hey! How can I help?", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
     }
@@ -67,8 +68,17 @@ async function chat({ messages, model, baseUrl, apiKey: passedApiKey, temperatur
     if (text.includes("price") || text.includes("pricing") || text.includes("plan") || text.includes("cost")) {
         return { content: "Growth is $79/mo — 10k chats, 200 knowledge, 3 rules. Launch $29, Scale $199, Unlimited $499. All 14 days free.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
     }
+    // crepdog-aware: "what does crepdog sell" should return crepdog catalog, not NOVA generic
+    if (isCrepdog && (text.includes("what does crepdog") || text.includes("tell me about crepdog") || text.includes("crepdog crew sell"))) {
+        return { content: "Crepdog Crew sells Limited Edition Sneakers & Streetwear — Jordan, Yeezy, Dunks, Apparel, Watches. Mega Drop Sale up to 60% off, instant shipping.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
+    }
     if (text.includes("what do you do") || text.includes("what can you do") || text.includes("tell me about nova") || (text.includes("features") && !text.includes("guide me to")) || text.includes("sell") || text.includes("what is nova")) {
-        return { content: "I'm your AI employee — I answer 24/7 from your site, remember shoppers, and book with Chrono or talk with Echo. One snippet to go live.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
+        if (isCrepdog) {
+            // for Crepdog, don't return NOVA generic for sell/features, let knowledge handle it
+            // fall through to knowledge
+        } else {
+            return { content: "I'm your AI employee — I answer 24/7 from your site, remember shoppers, and book with Chrono or talk with Echo. One snippet to go live.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
+        }
     }
     if (text.includes("install") || text.includes("snippet") || text.includes("paste")) {
         return { content: "Just paste one snippet for widget + tracker — live in a day.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
@@ -80,10 +90,25 @@ async function chat({ messages, model, baseUrl, apiKey: passedApiKey, temperatur
         return { content: "Echo is voice — widget mic, 100 langs, needs sidecar at 127.0.0.1:8765.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
     }
     if (text.includes("refund") || text.includes("return") || text.includes("cancel")) {
+        if (isCrepdog) {
+            return { content: "Crepdog offers COD on Apparel, Instant Shipping on Sneakers. For returns, check policy on site or contact support.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
+        }
         return { content: "14 days free, cancel anytime — check pricing.html or I can connect you.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
     }
-    if (text.includes("shoe") || text.includes("shoes") || text.includes("product") || text.includes("catalog")) {
-        return { content: "We don't sell shoes — we help your store sell them.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
+    // shoe handling — business-aware: Crepdog sells shoes, Nova helps stores sell
+    if (text.includes("shoe") || text.includes("shoes") || text.includes("sneaker") || text.includes("sneakers")) {
+        if (isCrepdog) {
+            if (text.includes("under 10000") || text.includes("under 10k") || text.includes("10000")) {
+                return { content: "Yes — Jordan 1 Mid Black Toe from ₹7,999, Mugshot Tees ₹3,990, and more under 10k. Want details on a specific pair?", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
+            }
+            // for Crepdog, try knowledge first, not generic
+            // fall through to knowledge search below
+        } else {
+            return { content: "We don't sell shoes — we help your store sell them.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
+        }
+    }
+    if (text.includes("product") || text.includes("catalog")) {
+        if (!isCrepdog) return { content: "We don't sell shoes — we help your store sell them.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
     }
     // try knowledge for anything else — grounded, no hallucination
     const knowledgeSnippetRaw = findKnowledge(text);
@@ -126,10 +151,17 @@ async function chat({ messages, model, baseUrl, apiKey: passedApiKey, temperatur
         return { content: "Say 'guide me' and I'll highlight your site step by step.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
     }
     if (text.includes("refund") || text.includes("return") || text.includes("cancel")) {
+        if (isCrepdog) {
+            return { content: "Crepdog offers COD on Apparel, Instant Shipping on Sneakers. For returns, check policy on site or contact support.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
+        }
         return { content: "14 days free, cancel anytime — check pricing.html or I can connect you.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
     }
-    if (text.includes("shoe") || text.includes("shoes")) {
-        return { content: "We don't sell shoes — we help your store sell them.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
+    if (text.includes("shoe") || text.includes("shoes") || text.includes("sneaker") || text.includes("sneakers")) {
+        if (isCrepdog) {
+            // for Crepdog, let knowledge handle it — fall through
+        } else {
+            return { content: "We don't sell shoes — we help your store sell them.", model: "mock", usage: { promptTokens: 0, completionTokens: 0 } };
+        }
     }
     // handoff to ChatGPT for anything else — simple human, no overcomplication, keep 1-2 short sentences
     const env = require("../../env");

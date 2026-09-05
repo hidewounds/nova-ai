@@ -894,8 +894,41 @@
     var hp=$("healthPill"); if(hp){ hp.title="All systems operational — view overview"; hp.addEventListener("click", function(){ selectTab("overview"); }); }
   }
   document.readyState==="loading" ? document.addEventListener("DOMContentLoaded", initPortalChrome) : initPortalChrome();
-  $("#loginForm")?.addEventListener("submit", e=>{ e.preventDefault(); login(); });
-  $("liPass")?.addEventListener("keydown", e=>{ if(e.key==="Enter") login(); });
+  // --- robust login wiring: ensure form submit works even if DOM not ready at script load ---
+  function attachLoginHandlers(){
+    const form = document.getElementById("loginForm");
+    if(form && !form._novaBound){
+      form._novaBound = true;
+      form.addEventListener("submit", e=>{ e.preventDefault(); login(); });
+    }
+    const pass = document.getElementById("liPass");
+    if(pass && !pass._novaBound){
+      pass._novaBound = true;
+      pass.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); login(); }});
+    }
+    const email = document.getElementById("liEmail");
+    if(email && !email._novaBound){
+      email._novaBound = true;
+      email.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); login(); }});
+    }
+    // also ensure button click directly triggers login (covers case where form submit not wired)
+    const btn = form?.querySelector('button[type="submit"]');
+    if(btn && !btn._novaBound){
+      btn._novaBound = true;
+      btn.addEventListener("click", e=>{
+        e.preventDefault();
+        login();
+      });
+    }
+  }
+  // try immediately and on DOM ready
+  attachLoginHandlers();
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded", attachLoginHandlers);
+  }
+  // retry shortly after (handles slow parse / cached HTML)
+  setTimeout(attachLoginHandlers, 50);
+  setTimeout(attachLoginHandlers, 300);
   if(TOKEN){
     api("GET","/me").then(m=>{ ME=m; enter(); }).catch(()=>{ show($("loginView"), true); show($("appView"), false); });
   }

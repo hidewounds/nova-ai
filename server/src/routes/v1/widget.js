@@ -45,6 +45,24 @@ router.get("/config", (req, res, next) => {
         const multiEnabled = addons.find((a) => a.key === "multilanguage")?.enabled || false;
         const chrono = (() => { try { return require("../../core/chrono/schedule").getSchedule(req.nova.businessId); } catch { return null; } })();
         const guide = (() => { try { return require("../../core/guide/store").getGuide(req.nova.businessId); } catch { return null; } })();
+        const theme = (() => {
+            try {
+                const t = require("../../core/theme/store").getTheme(req.nova.businessId);
+                if (t && t.theme) return t.theme;
+                if (fullConfig.site?.theme) return fullConfig.site.theme;
+                if (guide && guide.theme) return guide.theme;
+            } catch {}
+            return null;
+        })();
+        const customerBase = (() => {
+            try {
+                const t = require("../../core/theme/store").getTheme(req.nova.businessId);
+                if (t && t.customerBase) return t.customerBase;
+                if (fullConfig.site?.customerBase) return fullConfig.site.customerBase;
+                if (guide && guide.customerBase) return guide.customerBase;
+            } catch {}
+            return null;
+        })();
 
         res.json({
             config: {
@@ -64,6 +82,8 @@ router.get("/config", (req, res, next) => {
                 greetingTemplate: fullConfig.call?.greetingTemplate || "",
                 guideAvailable: Boolean(guide && guide.steps && guide.steps.length),
                 siteUrl: fullConfig.site?.url || guide?.siteUrl || "",
+                theme: theme || null,
+                customerBase: customerBase || null,
             },
         });
     } catch (error) {
@@ -77,6 +97,20 @@ router.get("/guide", (req, res, next) => {
         const guide = require("../../core/guide/store").getGuide(req.nova.businessId);
         if (!guide) return res.json({ guide: null, message: "No guide. Business owner: run site analyze in Portal." });
         res.json({ guide });
+    } catch (error) { next(error); }
+});
+
+// GET /api/v1/widget/theme — theme-aware widget, learns design & customer base except restricted
+router.get("/theme", (req, res, next) => {
+    try {
+        authenticateWidget(req);
+        const themeData = (() => {
+            try { return require("../../core/theme/store").getTheme(req.nova.businessId); } catch { return null; }
+        })();
+        const cfg = (() => { try { return require("../../core/config/service").getConfig(req.nova.businessId); } catch { return null; } })();
+        const theme = themeData?.theme || cfg?.site?.theme || null;
+        const customerBase = themeData?.customerBase || cfg?.site?.customerBase || null;
+        res.json({ theme, customerBase, updatedAt: themeData?.updatedAt || cfg?.site?.lastAnalyzedAt || null });
     } catch (error) { next(error); }
 });
 

@@ -39,7 +39,12 @@ const env = Object.freeze({
     port: num(process.env.PORT, 3000),
     logLevel: String(process.env.NOVA_LOG_LEVEL || (nodeEnv === "production" ? "info" : "debug")),
 
-    dbPath: process.env.NOVA_DB_PATH || (process.env.VERCEL ? "/tmp/nova.db" : path.join(__dirname, "..", "..", "database", "nova.db")),
+    dbPath: (() => {
+        const raw = process.env.NOVA_DB_PATH;
+        if (!raw) return process.env.VERCEL ? "/tmp/nova.db" : path.join(__dirname, "..", "..", "database", "nova.db");
+        // Resolve relative paths against project root, not cwd, so local runs from any directory use the same DB
+        return path.isAbsolute(raw) ? raw : path.join(__dirname, "..", "..", raw);
+    })(),
 
     corsOrigin: process.env.NOVA_CORS_ORIGIN === "true" ? true : (process.env.NOVA_CORS_ORIGIN || ""),
     allowedOrigins: parseAllowedOrigins(),

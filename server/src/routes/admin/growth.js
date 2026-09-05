@@ -88,7 +88,7 @@ router.post("/businesses/:businessId/portal-users", scoped, (req, res, next) => 
         const body = req.body || {};
         if (!body.email || !body.password) throw badRequest("email and password are required.");
 
-        const existing = db().prepare("SELECT id FROM portal_users WHERE email = ? COLLATE NOCASE").get(String(body.email).toLowerCase());
+        const existing = db().prepare("SELECT id FROM portal_users WHERE email = ? COLLATE NOCASE").get(String(body.email).trim().toLowerCase());
         if (existing) {
             // Reset flow: update hash + rebind to THIS business.
             db().prepare(

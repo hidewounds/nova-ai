@@ -78,7 +78,8 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;opa
 label{display:block;margin-bottom:14px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-family:"JetBrains Mono",monospace}
 label span{letter-spacing:0;text-transform:none;font-weight:400;color:var(--mut-2)}
 input,select,textarea{width:100%;margin-top:6px;padding:11px 13px;border:1.5px solid var(--line);border-radius:12px;font-size:14px;font-family:"Instrument Sans",sans-serif;background:rgba(255,255,255,.04);color:var(--text);transition:.18s;backdrop-filter:blur(8px)}
-input::placeholder,textarea::placeholder{color:var(--mut-3)} input:hover,select:hover,textarea:hover{border-color:var(--line-2);background:rgba(255,255,255,.06)}
+input::placeholder,textarea::placeholder{color:var(--mut);opacity:1} input:hover,select:hover,textarea:hover{border-color:var(--line-2);background:rgba(255,255,255,.06)}
+#chWeekly input::placeholder, #ovOpen::placeholder, #ovClose::placeholder{color:var(--mut) !important;opacity:1 !important}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 4px rgba(139,92,246,.14);background:rgba(255,255,255,.06)}
 textarea{resize:vertical;min-height:88px;line-height:1.5}
 /* Buttons — nova-web magnetic */
@@ -218,7 +219,10 @@ canvas{max-width:100%}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.pane{animation:none} .pane.active{animation:none}}
 #offlineBanner{position:fixed;top:0;left:0;right:0;z-index:99;background:var(--warn-bg);border-bottom:1px solid var(--warn-border);color:#92400e;padding:8px 14px;text-align:center;font-size:12px;font-weight:700;display:none;backdrop-filter:blur(8px)}
-input:disabled,select:disabled,textarea:disabled{opacity:.6;cursor:not-allowed;background:rgba(255,255,255,.02) !important}
+input:disabled,select:disabled,textarea:disabled{opacity:1 !important;cursor:not-allowed;background:var(--surface) !important;color:var(--text) !important;border-color:var(--line-2) !important}
+#chWeekly input:disabled{opacity:1 !important;color:var(--text) !important;background:var(--surface-2) !important;border-color:var(--line-2) !important}
+#chPreview{color:var(--text) !important;background:var(--surface) !important;border-color:var(--line-2) !important;opacity:1 !important}
+#chPreview *{color:var(--text) !important}
 #healthPill{cursor:pointer;transition:.18s} #healthPill:hover{border-color:var(--line-3);background:rgba(255,255,255,.08)}
 /* === CLEAN LOOK — airy, no overlaps, buttons never crowded === */
 .content{max-width:1080px;padding:32px 28px 48px}

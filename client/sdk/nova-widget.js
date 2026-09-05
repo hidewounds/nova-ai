@@ -94,13 +94,129 @@
         "#nova-avail-toggle{width:36px;height:36px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font-size:14px;cursor:pointer}",
         "#nova-avail-panel{display:none;max-height:160px;overflow-y:auto;border-top:1px solid #e5e7eb;background:#fff;padding:8px;font-size:12.5px}",
         "#nova-avail-panel.open{display:block}",
-        ".nova-slot{display:inline-block;margin:3px 4px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:999px;cursor:pointer;font-size:12px;background:#f9fafb}",
+        ".nova-slot{display:inline-block;margin:3px 4px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:999px;cursor:pointer;font-size:12px;background:#fff;color:#111}",
         ".nova-slot:hover{background:#111;color:#fff;border-color:#111}",
         ".nova-msg strong{font-weight:700;color:#111}",
         ".nova-msg em{font-style:italic}",
         "@media(max-width:500px){#nova-widget{right:12px;left:12px;width:auto;bottom:84px;height:70vh}#nova-widget-button{right:16px;bottom:16px}}"
     ].join("\n");
     document.head.appendChild(style);
+
+    // deeper UI improvisation — widget learns design system so it sits well with site, improves as site changes
+    function applyWidgetTheme(theme, customerBase){
+        if(!theme || typeof theme !== "object") return;
+        try{
+            if(theme.restricted) return;
+            var primary = theme.primary || null;
+            var secondary = theme.secondary || null;
+            var bg = theme.background || null;
+            var surface = theme.surface || null;
+            var text = theme.text || null;
+            var muted = theme.muted || null;
+            var border = theme.border || null;
+            var font = theme.fontFamily || null;
+            var headingFont = theme.headingFont || null;
+            var radius = theme.radius || null;
+            var radiusLg = theme.radiusLg || null;
+            var shadow = theme.shadow || null;
+            var spacing = theme.spacing || null;
+            var darkMode = theme.darkMode;
+            var css = "";
+            // primary — button, header, send
+            if(primary && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(primary)){
+                css += "\n#nova-widget-button{background:"+primary+"!important;color:#fff!important;border-color:transparent!important}";
+                css += "\n#nova-widget-header{background:"+primary+"!important;color:#fff!important}";
+                css += "\n#nova-widget-send{background:"+primary+"!important;color:#fff!important}";
+                css += "\n.nova-msg.user{background:"+primary+"!important;color:#fff!important;border-color:"+primary+"!important}";
+                try{ document.documentElement.style.setProperty("--nova-primary", primary); }catch{}
+                if(button) button.style.background = primary;
+                var header = widget ? widget.querySelector("#nova-widget-header") : null;
+                if(header) header.style.background = primary;
+            }
+            if(secondary && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(secondary)){
+                css += "\n#nova-mic.on{background:"+secondary+"!important}";
+            }
+            // dark/light — site dark (#050508) → widget dark, site light → widget light
+            if(darkMode === true){
+                css += "\n#nova-widget{background:#0f0f11!important;color:#f4f4f5!important;border-color:rgba(255,255,255,.08)!important}";
+                css += "\n#nova-widget-messages{background:#0f0f11!important}";
+                css += "\n.nova-msg.assistant{background:#1a1a1e!important;color:#f4f4f5!important;border-color:#27272a!important}";
+                css += "\n#nova-widget-input-area{background:#0f0f11!important;border-color:#27272a!important}";
+                css += "\n#nova-widget-input{background:#1a1a1e!important;color:#f4f4f5!important;border-color:#27272a!important}";
+                css += "\n#nova-avail-panel{background:#1a1a1e!important;border-color:#27272a!important;color:#f4f4f5!important}";
+                css += "\n.nova-slot{background:#27272a!important;color:#f4f4f5!important;border-color:#3f3f46!important}";
+                css += "\n.nova-slot:hover{background:#f4f4f5!important;color:#0f0f11!important;border-color:#f4f4f5!important}";
+                if(widget){ widget.style.background = "#0f0f11"; widget.style.color = "#f4f4f5"; }
+            } else if(darkMode === false){
+                css += "\n#nova-widget{background:#fff!important}";
+                css += "\n#nova-avail-panel{background:#fff!important;border-color:#e5e7eb!important;color:#111!important}";
+                css += "\n.nova-slot{background:#fff!important;color:#111!important;border-color:#e5e7eb!important}";
+                css += "\n.nova-slot:hover{background:#111!important;color:#fff!important;border-color:#111!important}";
+            }
+            if(bg && bg.length>2 && bg !== "rgba(255,255,255,.015)"){
+                // use site bg as subtle hint for widget header if not primary
+                try{ if(widget) widget.style.background = bg; }catch{}
+            }
+            if(surface && surface.length>2){
+                css += "\n.nova-msg.assistant{background:"+surface+"!important}";
+            }
+            if(text && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(text)){
+                css += "\n#nova-widget{color:"+text+"!important}";
+            }
+            if(muted && /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(muted)){
+                css += "\n#nova-widget-messages .nova-msg.nova-loading{color:"+muted+"!important}";
+            }
+            if(border && border.length>2){
+                css += "\n#nova-widget{border-color:"+border+"!important}";
+                css += "\n#nova-widget-header{border-color:"+border+"!important}";
+            }
+            // fonts — site uses Instrument Sans / Space Grotesk / JetBrains Mono
+            if(font && font.length>2){
+                var f = font + ", -apple-system, BlinkMacSystemFont, sans-serif";
+                if(widget) widget.style.fontFamily = f;
+                if(button) button.style.fontFamily = font + ", sans-serif";
+                css += "\n#nova-widget{font-family:"+f+"!important}";
+            }
+            if(headingFont && headingFont.length>2){
+                css += "\n#nova-widget-header{font-family:"+headingFont+", sans-serif!important}";
+            }
+            // radius — site --r-lg 22px etc. → widget radius
+            var r = radiusLg || radius;
+            if(r && /^\d+(px|rem|%|)$/.test(r)){
+                var rv = r.match(/^\d+$/) ? r+"px" : r;
+                css += "\n#nova-widget{border-radius:"+rv+"!important}";
+                css += "\n#nova-widget-header{border-radius:"+rv+" "+rv+" 0 0!important}";
+                if(widget) widget.style.borderRadius = rv;
+            }
+            // shadow — site --shadow-soft
+            if(shadow && shadow.length>5){
+                css += "\n#nova-widget{box-shadow:"+shadow+"!important}";
+            }
+            // spacing — site gap
+            if(spacing && /^\d+(px|rem)$/.test(spacing)){
+                css += "\n#nova-widget-messages{gap:"+spacing+"!important}";
+            }
+            if(css) {
+                var s = document.createElement("style");
+                s.id = "nova-widget-theme";
+                s.textContent = css;
+                // remove old theme style if exists
+                var old = document.getElementById("nova-widget-theme");
+                if(old) old.remove();
+                document.head.appendChild(s);
+            }
+            // customer base — adapt tone, keep simple human
+            if(customerBase){
+                var title = widget ? widget.querySelector("#nova-widget-title") : null;
+                if(customerBase.indexOf("fashion")!==-1 && title && title.textContent === "AI Assistant") title.textContent = "Style Assistant";
+                if(customerBase.indexOf("business")!==-1 && title) title.textContent = "Business Assistant";
+                // also adapt welcome message tone if needed — keep short
+            }
+            try{ localStorage.setItem("nova_widget_theme", JSON.stringify({primary:primary, secondary:secondary, bg:bg, surface:surface, font:font, headingFont:headingFont, radius:r, shadow:shadow, customerBase:customerBase, darkMode:darkMode, at:Date.now()})); }catch{}
+        }catch(e){}
+    }
+    // expose for manual refresh
+    window.NOVA_APPLY_THEME = applyWidgetTheme;
 
     // -------------------------------------------------------
     // elements
@@ -273,6 +389,33 @@
                                 }
                             });
                         }, 1200);
+                    }
+                } catch {}
+                // theme-aware: widget learns design & customer base from site, improves as site changes (except restricted)
+                try {
+                    var themeData = data.config.theme;
+                    var customerBase = data.config.customerBase;
+                    // also try dedicated theme endpoint for fresher data (site may have changed since config)
+                    api("/api/v1/widget/theme",{method:"GET"}).then(function(td){
+                        if(td && td.theme) themeData = td.theme;
+                        if(td && td.customerBase) customerBase = td.customerBase;
+                        applyWidgetTheme(themeData, customerBase);
+                    }).catch(function(){ if(themeData) applyWidgetTheme(themeData, customerBase); });
+                    // fallback: apply immediately from config
+                    if(themeData) applyWidgetTheme(themeData, customerBase);
+                    // also adapt welcome tone to customer base
+                    if(customerBase && customerBase.indexOf("fashion")!==-1 && data.config.welcomeMessage){
+                        // keep welcome but note fashion tone — widget will be more style-aware
+                    }
+                } catch {}
+                // poll for theme changes as site evolves (every 5 min, widget improves)
+                try {
+                    if(!window._novaThemeInterval){
+                        window._novaThemeInterval = setInterval(function(){
+                            api("/api/v1/widget/theme",{method:"GET"}).then(function(td){
+                                if(td && td.theme) applyWidgetTheme(td.theme, td.customerBase);
+                            }).catch(function(){});
+                        }, 300000);
                     }
                 } catch {}
             }
