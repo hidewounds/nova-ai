@@ -71,8 +71,8 @@ const env = Object.freeze({
     bootstrapSecret: process.env.NOVA_BOOTSTRAP_SECRET || crypto.randomBytes(16).toString("hex"),
 
     // Integration key scopes — integration keys are business-scoped and must allow
-    // the core platform operations used by the SDK and tests (chat, behavior, knowledge CRUD).
-    integrationKeyScopes: (process.env.NOVA_INTEGRATION_KEY_SCOPES || "chat:read,behavior:write,behavior:read,knowledge:read,knowledge:write").split(",").map(s => s.trim()),
+    // the core platform operations used by the SDK and tests (chat, behavior, knowledge CRUD, tts).
+    integrationKeyScopes: (process.env.NOVA_INTEGRATION_KEY_SCOPES || "chat:read,behavior:write,behavior:read,knowledge:read,knowledge:write,tts:synthesize,tts:read").split(",").map(s => s.trim()),
 
     // Webhook signing
     webhookSecret: process.env.NOVA_WEBHOOK_SECRET || "",

@@ -63,10 +63,11 @@ const BEHAVIOR_EVENT_TYPES = [
  * Custom Behaviour: business can define situation-specific overrides (trigger -> pattern/tone/instructions).
  */
 const PLANS = {
-    launch: { label: "Launch", maxRoles: null, description: "Unified brain — all 6 patterns, 1k conversations/mo, no custom behaviour", limits: { conversations: 1000, knowledgeItems: 50, bookings: true, customBehaviours: 0, maxCustomRules: 0 } },
-    growth: { label: "Growth", maxRoles: null, description: "Unified brain — 10k conversations/mo, Custom Behaviour Builder (3 rules)", limits: { conversations: 10000, knowledgeItems: 200, bookings: true, customBehaviours: 3, maxCustomRules: 3 } },
-    scale: { label: "Scale", maxRoles: null, description: "Unified brain — 50k conversations/mo, Advanced Custom Behaviour (10 rules) + voice", limits: { conversations: 50000, knowledgeItems: 500, bookings: true, customBehaviours: 10, maxCustomRules: 10 } },
-    unlimited: { label: "Unlimited", maxRoles: null, description: "Unified brain — unlimited, unlimited custom behaviours + custom RLHF training", limits: { conversations: Infinity, knowledgeItems: Infinity, bookings: true, customBehaviours: Infinity, maxCustomRules: Infinity } },
+    launch: { label: "Launch", maxRoles: null, description: "Unified brain — 1k chats, 50 knowledge — no Chrono/Echo", limits: { conversations: 1000, knowledgeItems: 50, bookings: false, customBehaviours: 0, maxCustomRules: 0 } },
+    growth: { label: "Growth", maxRoles: null, description: "Unified brain — 10k chats, 200 knowledge + Chrono + Echo English", limits: { conversations: 10000, knowledgeItems: 200, bookings: true, customBehaviours: 0, maxCustomRules: 0 } },
+    scale: { label: "Scale", maxRoles: null, description: "Unified brain — 50k chats, 500 knowledge + all add-ons (Chrono+Echo+Voice+Multilanguage) 10 rules", limits: { conversations: 50000, knowledgeItems: 500, bookings: true, customBehaviours: 10, maxCustomRules: 10 } },
+    custom: { label: "Custom", maxRoles: null, description: "Bespoke — unlimited chats/knowledge/rules + custom RLHF — full analysis", limits: { conversations: Infinity, knowledgeItems: Infinity, bookings: true, customBehaviours: Infinity, maxCustomRules: Infinity } },
+    unlimited: { label: "Custom", maxRoles: null, description: "Bespoke — unlimited (legacy alias for Custom)", limits: { conversations: Infinity, knowledgeItems: Infinity, bookings: true, customBehaviours: Infinity, maxCustomRules: Infinity } },
 };
 
 // Custom Agent Behaviour — plan-gated builder that lets businesses define situation-specific overrides

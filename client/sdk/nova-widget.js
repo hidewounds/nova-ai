@@ -679,8 +679,10 @@
                             var cd = await api("/api/v1/widget/chat", {method:"POST", body:JSON.stringify({customerId:getVisitorId(), conversationId:conversationId, messages:messages.slice(-30)})});
                             if (cl) cl.remove();
                             conversationId = cd.conversationId || conversationId;
-                            addMessage("assistant", cd.reply || "");
-                            messages.push({role:"assistant", content: cd.reply || ""});
+                            var reply2=cd.reply||"";
+                            addMessage("assistant", reply2);
+                            messages.push({role:"assistant", content: reply2});
+                            try{ var tts2=await api("/api/v1/tts/synthesize",{method:"POST", body:JSON.stringify({text:reply2, language: multilanguageEnabled?"auto":"en"})}).catch(function(){return null}); if(tts2&&tts2.audioBase64){ var a2=new Audio("data:audio/mp3;base64,"+tts2.audioBase64); a2.play().catch(function(){}); } }catch{}
                         } catch (e) { if (cl) cl.remove(); addMessage("assistant", e.message || "Chat failed."); }
                         finally { busy = false; if (sendEl) sendEl.disabled = false; if (inputEl) inputEl.focus(); }
                     };
@@ -719,20 +721,22 @@
                         if (loading) loading.className = "nova-msg nova-loading";
                         busy = true; if (sendEl) sendEl.disabled = true;
                         try {
+                            // let Echo auto-detect any of 100+ langs when multilanguage on, else default
+                            var tLang = multilanguageEnabled ? "auto" : (voiceEnabled ? "auto" : "en");
                             var data = await api("/api/v1/widget/transcribe", {
                                 method: "POST",
-                                body: JSON.stringify({ audioBase64: base64, mimeType: mime, customerId: getVisitorId(), conversationId: conversationId })
+                                body: JSON.stringify({ audioBase64: base64, mimeType: mime, customerId: getVisitorId(), conversationId: conversationId, language: tLang })
                             });
                             if (loading) loading.remove();
                             var text = data.text || data.transcript || "";
+                            var lang = data.language || tLang || "auto";
                             if (!text) {
                                 text = data.message || "Heard you — please type your message while echo warms up.";
                                 addMessage("assistant", text);
-                                // still allow follow-up hi: ensure busy cleared and input focused
                                 return;
                             }
-                            // inject transcript as user message and send
-                            addMessage("user", text);
+                            // inject transcript as user message and send on their behalf — Nova AI + OpenAI see it as normal chat in detected language
+                            addMessage("user", text + (lang && lang!=="en" ? " ["+lang+"]" : ""));
                             messages.push({ role: "user", content: text });
                             var chatLoading = addMessage("assistant", "...");
                             if (chatLoading) chatLoading.className = "nova-msg nova-loading";
@@ -742,8 +746,18 @@
                             });
                             if (chatLoading) chatLoading.remove();
                             conversationId = chatData.conversationId || conversationId;
-                            addMessage("assistant", chatData.reply || "");
-                            messages.push({ role: "assistant", content: chatData.reply || "" });
+                            var reply = chatData.reply || "";
+                            addMessage("assistant", reply);
+                            messages.push({ role: "assistant", content: reply });
+                            // speak reply via TTS in same language — Echo 24/7 (piper/openai)
+                            try{
+                                var ttsLang = lang && lang!=="auto" ? lang : (multilanguageEnabled ? (data.language||"auto") : "en");
+                                var ttsRes = await api("/api/v1/tts/synthesize",{method:"POST", body:JSON.stringify({text:reply, language:ttsLang})}).catch(function(){return null});
+                                if(ttsRes && ttsRes.audioBase64){
+                                    var audio = new Audio("data:audio/mp3;base64,"+ttsRes.audioBase64);
+                                    audio.play().catch(function(){});
+                                }
+                            }catch{}
                         } catch (e) {
                             if (loading) loading.remove();
                             addMessage("assistant", e.message || "Transcription failed. Please type your message.");

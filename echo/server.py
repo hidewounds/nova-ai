@@ -16,11 +16,18 @@ from typing import Optional, AsyncGenerator
 from contextlib import asynccontextmanager
 
 import numpy as np
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
+    print("WARNING: torch not installed — VAD and GPU disabled, sidecar will run in stub mode")
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+try:
+    import uvicorn
+except ImportError:
+    uvicorn = None
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -30,8 +37,12 @@ logger = logging.getLogger("echo")
 MODEL = None
 MODEL_NAME = "base"
 VAD_MODEL = None
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-COMPUTE_TYPE = "float16" if torch.cuda.is_available() else "int8"
+try:
+    DEVICE = "cuda" if torch and torch.cuda.is_available() else "cpu"
+    COMPUTE_TYPE = "float16" if torch and torch.cuda.is_available() else "int8"
+except:
+    DEVICE = "cpu"
+    COMPUTE_TYPE = "int8"
 
 # Audio constants
 SAMPLE_RATE = 16000

@@ -149,18 +149,34 @@ router.post("/transcribe", express.json({ limit: "12mb" }), async (req, res, nex
 
         // attempt real sidecar if configured and audio present
         const sidecarUrl = fullConfig.echo?.sidecarUrl || require("../../env").echoSidecarUrl;
-        if (body.audioBase64 && sidecarUrl) {
+        if (body.audioBase64) {
+            // 1) try sidecar first
+            if (sidecarUrl) {
+                try {
+                    const buf = Buffer.from(body.audioBase64, "base64");
+                    const sideRes = await echoTranscribe.callSidecar({ sidecarUrl, audioBuffer: buf, filename: `audio.${(body.mimeType||"webm").split("/")[1]||"webm"}`, params });
+                    const crypto = require("../../lib/crypto");
+                    const db = require("../../db");
+                    const id = `ect_${crypto.randomHex(10)}`;
+                    db.get().prepare("INSERT INTO echo_transcripts (transcript_id, business_id, customer_id, conversation_id, language, transcript, duration_ms, created_at, initial_prompt, word_timestamps_json, model) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+                        .run(id, req.nova.businessId, customerId, body.conversationId || null, sideRes.language || params.language || "", sideRes.text || "", body.durationMs || 0, Date.now(), params.prompt || "", JSON.stringify(sideRes.segments?.flatMap((s) => s.words || []) || []), params.model || "turbo");
+                    audit.record({ businessId: req.nova.businessId, actorType: "widget", actorId: customerId, action: "echo.transcribed", detail: { language: sideRes.language, via:"sidecar" } });
+                    return res.json({ transcriptId: id, text: sideRes.text, language: sideRes.language, segments: sideRes.segments || [] });
+                } catch (e) { console.error("sidecar transcribe failed", e.message); /* fall through to OpenAI */ }
+            }
+            // 2) OpenAI Whisper fallback — works without sidecar, 100+ langs, 24/7
             try {
                 const buf = Buffer.from(body.audioBase64, "base64");
-                const sideRes = await echoTranscribe.callSidecar({ sidecarUrl, audioBuffer: buf, filename: `audio.${(body.mimeType||"webm").split("/")[1]||"webm"}`, params });
-                // persist real transcript
-                const crypto = require("../../lib/crypto");
-                const db = require("../../db").get();
-                const id = `ect_${crypto.randomHex(10)}`;
-                db().prepare("INSERT INTO echo_transcripts (transcript_id, business_id, customer_id, conversation_id, language, transcript, duration_ms, created_at, initial_prompt, word_timestamps_json, model) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
-                    .run(id, req.nova.businessId, customerId, body.conversationId || null, sideRes.language || params.language || "", sideRes.text || "", body.durationMs || 0, Date.now(), params.prompt || "", JSON.stringify(sideRes.segments?.flatMap((s) => s.words || []) || []), params.model || "turbo");
-                audit.record({ businessId: req.nova.businessId, actorType: "widget", actorId: customerId, action: "echo.transcribed", detail: { language: sideRes.language } });
-                return res.json({ transcriptId: id, text: sideRes.text, language: sideRes.language, segments: sideRes.segments || [] });
+                const openRes = await echoTranscribe.callOpenAIWhisper({ audioBuffer: buf, filename: `audio.${(body.mimeType||"webm").split("/")[1]||"webm"}`, language: params.language, prompt: params.prompt });
+                if (openRes && openRes.text) {
+                    const crypto = require("../../lib/crypto");
+                    const db = require("../../db");
+                    const id = `ect_${crypto.randomHex(10)}`;
+                    db.get().prepare("INSERT INTO echo_transcripts (transcript_id, business_id, customer_id, conversation_id, language, transcript, duration_ms, created_at, initial_prompt, word_timestamps_json, model) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+                        .run(id, req.nova.businessId, customerId, body.conversationId || null, openRes.language || params.language || "", openRes.text || "", body.durationMs || 0, Date.now(), params.prompt || "", "[]", "whisper-1");
+                    audit.record({ businessId: req.nova.businessId, actorType: "widget", actorId: customerId, action: "echo.transcribed", detail: { language: openRes.language, via:"openai" } });
+                    return res.json({ transcriptId: id, text: openRes.text, language: openRes.language || params.language, segments: [] });
+                }
             } catch (e) { /* fall through to stub */ }
         }
         audit.record({ businessId: req.nova.businessId, actorType: "widget", actorId: customerId, action: "echo.transcribed", detail: { stub: true } });

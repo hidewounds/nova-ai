@@ -92,6 +92,8 @@
           <button data-tab="overview" class="nav-item active" role="tab" aria-selected="true" tabindex="0"><span class="ic">◉</span> Overview</button>
           <button data-tab="agent" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">⬢</span> Agent</button>
           <button data-tab="knowledge" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">▭</span> Knowledge</button>
+          <button data-tab="voice" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">◍</span> Voice</button>
+          <button data-tab="schedule" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">◷</span> Schedule</button>
           <button data-tab="integration" class="nav-item" role="tab" aria-selected="false" tabindex="-1"><span class="ic">⧉</span> Integrations</button>
         </div>
         <div class="nav-group">
@@ -149,6 +151,8 @@
         <section id="tab-overview" class="tabpane active" aria-labelledby="pageTitle"></section>
         <section id="tab-agent" class="tabpane" aria-label="Agent brain"></section>
         <section id="tab-knowledge" class="tabpane" aria-label="Knowledge"></section>
+        <section id="tab-voice" class="tabpane" aria-label="Voice"></section>
+        <section id="tab-schedule" class="tabpane" aria-label="Schedule"></section>
         <section id="tab-integration" class="tabpane" aria-label="Integrations"></section>
         <!-- Customers -->
         <section id="tab-customers" class="tabpane" aria-label="Customers"></section>
@@ -184,7 +188,7 @@
   const syncBiz=()=>{ const t=sel.options[sel.selectedIndex]; if(t && biz) biz.textContent=t.textContent.replace(' (inactive)','').trim(); if(t && bPill) bPill.textContent=t.textContent.trim(); };
   if(sel){ sel.addEventListener('change',syncBiz); new MutationObserver(syncBiz).observe(sel,{childList:true}); }
   const tabs=document.querySelectorAll('#tabs .nav-item'), ct=document.getElementById('crumbTab'), pt=document.getElementById('pageTitle'), pd=document.getElementById('pageDesc');
-  const descs={overview:"Workspace at a glance — KPIs, attention, workspace. (Health → diagnostics, Analytics → trends)",agent:"The brain — identity, personality, live preview. (Knowledge/Memory/Behaviour have their own sections)",knowledge:"Everything NOVA knows — grounded, synced. Only place to manage sources.",integration:"Connect website, chat, tracker — only connections, not model or knowledge.",customers:"People — searchable, GDPR-ready. Click View for memories & conversations in one place.",memory:"Memory config — not live data. Live memories are in Customers → View.",behavior:"Conversations — all threads. Signals are per-customer in Customers → View.",custom:"Behaviour — trigger → pattern + tone. Advanced override, live in <1s.",audit:"Immutable audit — who changed what, when.",performance:"Performance — grounded rate, msgs/conv, signals. (Not latency — see logs)",usage:"Usage — volume handled: conversations, messages, knowledge, customers.",costs:"Costs — attributed revenue, purchases, leads. 7d window.",health:"Health — diagnostics: brain, knowledge, integrations, DB, rate limits.",logs:"Logs — immutable audit of every change. Filterable.",settings:"Settings — workspace identity, plan, integration key. No duplication."};
+  const descs={overview:"Workspace at a glance — KPIs, attention, workspace. (Health → diagnostics, Analytics → trends)",agent:"The brain — identity, personality, live preview. (Knowledge/Memory/Behaviour have their own sections)",knowledge:"Everything NOVA knows — grounded, synced. Only place to manage sources.",voice:"Voice — Echo sidecar 24/7. Greeting, handoff, languages, sidecar health.",schedule:"Schedule — Chrono 24/7. Weekly hours, slots, holidays, live preview.",integration:"Connect website, chat, tracker — only connections, not model or knowledge.",customers:"People — searchable, GDPR-ready. Click View for memories & conversations in one place.",memory:"Memory config — not live data. Live memories are in Customers → View.",behavior:"Conversations — all threads. Signals are per-customer in Customers → View.",custom:"Behaviour — trigger → pattern + tone. Advanced override, live in <1s.",audit:"Immutable audit — who changed what, when.",performance:"Performance — grounded rate, msgs/conv, signals. (Not latency — see logs)",usage:"Usage — volume handled: conversations, messages, knowledge, customers.",costs:"Costs — attributed revenue, purchases, leads. 7d window.",health:"Health — diagnostics: brain, knowledge, integrations, DB, rate limits.",logs:"Logs — immutable audit of every change. Filterable.",settings:"Settings — workspace identity, plan, integration key. No duplication."};
   tabs.forEach(b=>b.addEventListener('click',()=>{
     const label=b.textContent.trim().replace(/^[^A-Za-z0-9]+/,'');
     if(ct) ct.textContent=label;

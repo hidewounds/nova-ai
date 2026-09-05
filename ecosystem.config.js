@@ -16,7 +16,7 @@ module.exports = {
         {
             name: "nova-echo-sidecar",
             script: "echo/server.py",
-            interpreter: "python3",
+            interpreter: "python",
             interpreter_args: "-u",
             args: "--model base --port 8765 --host 127.0.0.1",
             cwd: ".",

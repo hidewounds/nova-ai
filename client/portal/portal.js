@@ -48,13 +48,13 @@
     }catch(err){ const el=m; el.textContent=err.message; el.className="msg bad"; el.style.display="block"; setTimeout(()=>el.className="msg",4000); }
   };
   window.logout = function(){ sessionStorage.removeItem("nova_portal_token"); location.reload(); };
-  // --- Nav ---
+  // --- Nav --- (Voice + Schedule moved to AI — they ARE the AI's voice & time brain)
   const NAV = [
     {group:"HOME", items:[{id:"overview", label:"Overview", icon:"◉"}]},
-    {group:"AI", items:[{id:"agent", label:"Agent", icon:"⬢"},{id:"knowledge", label:"Knowledge", icon:"▭"},{id:"behaviors", label:"Behaviors", icon:"✦"},{id:"memory", label:"Memory", icon:"◎"}]},
+    {group:"AI", items:[{id:"agent", label:"Agent", icon:"⬢"},{id:"knowledge", label:"Knowledge", icon:"▭"},{id:"behaviors", label:"Behaviors", icon:"✦"},{id:"memory", label:"Memory", icon:"◎"},{id:"voice", label:"Voice", icon:"◍"},{id:"schedule", label:"Schedule", icon:"◷"}]},
     {group:"CUSTOMERS", items:[{id:"customers", label:"Customers", icon:"◯"},{id:"conversations", label:"Conversations", icon:"◐"},{id:"followups", label:"Follow-ups", icon:"✉"}]},
-    {group:"CHANNELS", items:[{id:"website", label:"Website", icon:"⧉"},{id:"voice", label:"Voice", icon:"◍"}]},
-    {group:"OPERATIONS", items:[{id:"schedule", label:"Schedule", icon:"◷"},{id:"integrations", label:"Integrations", icon:"⬣"}]},
+    {group:"CHANNELS", items:[{id:"website", label:"Website", icon:"⧉"}]},
+    {group:"OPERATIONS", items:[{id:"integrations", label:"Integrations", icon:"⬣"}]},
     {group:"SETTINGS", items:[{id:"business", label:"Business", icon:"⚙"},{id:"preferences", label:"Preferences", icon:"☰"},{id:"account", label:"Account", icon:"⚑"}]},
   ];
   const DESCS = {
@@ -629,11 +629,33 @@
       // Advanced
       html+='<details class="card"><summary style="cursor:pointer;font-weight:600;font-size:13px">Advanced configuration</summary><div style="margin-top:12px" class="muted xs">Sidecar health, model, and echo config live here. Keep defaults unless directed.</div><div style="margin-top:10px" class="code">Sidecar: '+(echo.sidecarUrl||"—")+' • Model: '+(echo.model||"turbo")+'\nGreeting: '+(call.greetingTemplate||"—").slice(0,120)+'</div></details>';
       pane.innerHTML=html;
-      // view-only lock — voice affects calls, portal views only
+      // gated: voice is add-on (voice_channel) or scale/unlimited — otherwise view-only with purchase CTA
+      const canEditVoice = (()=>{
+        const plan = (ME && ME.plan) || "launch";
+        const addons = CACHE.addons || [];
+        const hasVoice = addons.some(a=> a.key==="voice_channel" && a.enabled) || addons.some(a=> a.key==="multilanguage" && a.enabled);
+        return hasVoice || plan==="scale" || plan==="unlimited" || plan==="growth" && hasVoice; // growth needs addon, scale/unlimited auto
+      })();
       try{
-        pane.querySelectorAll("input, select, textarea, button[onclick*='saveVoice']").forEach(function(el){ if(el.tagName==="BUTTON"){ el.disabled=true; el.title="View only — contact admin"; el.style.opacity=".45"; el.textContent="View only"; } else { el.disabled=true; el.title="View only"; el.style.opacity=".6"; } });
-        const head=pane.querySelector(".card .card-head");
-        if(head && !head.querySelector("#voiceLock")){ const lock=document.createElement("span"); lock.id="voiceLock"; lock.className="pill"; lock.style.background="var(--warn-bg)"; lock.style.borderColor="var(--warn-border)"; lock.style.color="#92400e"; lock.textContent="View only"; head.appendChild(lock); }
+        if(!canEditVoice){
+          pane.querySelectorAll("input, select, textarea, button[onclick*='saveVoice']").forEach(function(el){ if(el.tagName==="BUTTON"){ el.disabled=true; el.title="View only — purchase Voice Channel"; el.style.opacity=".45"; el.textContent="View only — purchase required"; } else { el.disabled=true; el.title="View only — purchase Voice Channel"; el.style.opacity=".6"; } });
+          const head=pane.querySelector(".card .card-head");
+          if(head && !head.querySelector("#voiceLock")){ const lock=document.createElement("span"); lock.id="voiceLock"; lock.className="pill"; lock.style.background="var(--warn-bg)"; lock.style.borderColor="var(--warn-border)"; lock.style.color="#92400e"; lock.textContent="Add-on required"; head.appendChild(lock); }
+          // add purchase hint
+          if(!pane.querySelector("#voicePurchaseHint")){
+            const hint=document.createElement("div"); hint.id="voicePurchaseHint"; hint.className="card"; hint.style.background="var(--warn-bg)"; hint.style.borderColor="var(--warn-border)"; hint.innerHTML='<b style="color:#92400e">Voice is restricted — purchase Voice Channel add-on</b><p class="muted xs" style="margin:6px 0 0">Enable via Integrations → Voice Channel or upgrade to Scale/Unlimited. Sidecar 24/7 at '+esc(echo.sidecarUrl||"http://127.0.0.1:8765")+'.</p><button class="btn primary small" onclick="selectTab(\'integrations\')">Go to Integrations</button>';
+            pane.insertBefore(hint, pane.children[1]);
+          }
+        } else {
+          const head=pane.querySelector(".card .card-head");
+          if(head){
+            const lock=head.querySelector("#voiceLock"); if(lock) lock.remove();
+            if(!head.querySelector("#voiceLive")){
+              const live=document.createElement("span"); live.id="voiceLive"; live.className="pill"; live.style.background="var(--ok-bg)"; live.style.borderColor="var(--ok-border)"; live.style.color="var(--ok)"; live.innerHTML='<span class="dot ok"></span> Live 24/7'; head.appendChild(live);
+            }
+          }
+          const hint=pane.querySelector("#voicePurchaseHint"); if(hint) hint.remove();
+        }
       }catch{}
       // fetch sidecar health async
       (async function(){
@@ -673,8 +695,30 @@
       }catch{}
     }catch(e){ pane.innerHTML=errorState(e.message, "loadVoice()"); }
   }
-  window.saveVoice = async function(){ toast("View only — contact admin to change voice settings"); return; };
-  window.testVoice = function(){ toast("Voice test — check sidecar at "+($("voiceSidecar")?.value||"127.0.0.1:8765")); };
+  window.saveVoice = async function(){
+    const canEdit = (()=>{
+      const plan=(ME&&ME.plan)||"launch";
+      const addons=CACHE.addons||[];
+      return addons.some(a=>a.key==="voice_channel"&&a.enabled) || plan==="scale" || plan==="unlimited";
+    })();
+    if(!canEdit){ toast("Voice is add-on — purchase Voice Channel in Integrations"); return; }
+    const payload={
+      greetingTemplate:$("voiceGreeting")?.value||"",
+      handoffPhone:$("voicePhone")?.value||"",
+      handoffEmail:$("voiceEmail")?.value||"",
+      defaultLanguage:$("voiceLang")?.value||"en",
+      sidecarUrl:$("voiceSidecar")?.value||"",
+      initialPrompt:$("voicePrompt")?.value||"",
+      wordTimestamps:!!$("voiceWordTs")?.checked,
+      echoEnabled:true
+    };
+    try{
+      await api("PUT","/voice/settings",payload);
+      toast("Voice saved — live 24/7");
+      const m=$("voiceMsg"); if(m) m.textContent="Saved";
+    }catch(e){ toast(e.message); }
+  };
+  window.testVoice = function(){ toast("Voice test — check sidecar at "+($("voiceSidecar")?.value||"http://127.0.0.1:8765")); };
   // --- Schedule ---
   async function loadSchedule(){
     const pane=$("tab-schedule"); if(!pane) return;
@@ -700,19 +744,31 @@
         wh+='<div class="row"><div style="min-width:90px"><label>'+day+'</label></div><div><input data-day="'+day+'" value="'+esc(v)+'" placeholder="09:00-17:00"></div></div>';
       });
       const whEl=$("chWeekly"); if(whEl) whEl.innerHTML=wh;
-      // view-only lock — schedule affects bookings, portal views only
+      // gated: Chrono is core (bookings:true all plans) but show Live 24/7 badge when editable — otherwise hint to upgrade
+      const canEditSched = (()=>{
+        const plan=(ME&&ME.plan)||"launch";
+        return true; // Chrono live for all — 24/7 with NOVA AI (bookings:true)
+      })();
       try{
-        pane.querySelectorAll("input, select, textarea, button[onclick*='saveSchedule'], button[onclick*='addOverride']").forEach(function(el){
-          if(el.tagName==="BUTTON"){ el.disabled=true; el.title="View only — contact admin"; el.style.opacity=".45"; if(el.textContent.includes("Save")) el.textContent="View only"; if(el.textContent.includes("Add")) el.textContent="View only"; }
-          else { el.disabled=true; el.title="View only"; el.style.opacity=".6"; }
-        });
-        const head=pane.querySelector(".card .card-head");
-        if(head && !head.querySelector("#schedLock")){ const lock=document.createElement("span"); lock.id="schedLock"; lock.className="pill"; lock.style.background="var(--warn-bg)"; lock.style.borderColor="var(--warn-border)"; lock.style.color="#92400e"; lock.textContent="View only"; head.appendChild(lock); }
+        if(!canEditSched){
+          pane.querySelectorAll("input, select, textarea, button[onclick*='saveSchedule'], button[onclick*='addOverride']").forEach(function(el){
+            if(el.tagName==="BUTTON"){ el.disabled=true; el.title="View only — upgrade to Growth"; el.style.opacity=".45"; if(el.textContent.includes("Save")) el.textContent="View only"; if(el.textContent.includes("Add")) el.textContent="View only"; }
+            else { el.disabled=true; el.title="View only"; el.style.opacity=".6"; }
+          });
+          const head=pane.querySelector(".card .card-head");
+          if(head && !head.querySelector("#schedLock")){ const lock=document.createElement("span"); lock.id="schedLock"; lock.className="pill"; lock.style.background="var(--warn-bg)"; lock.style.borderColor="var(--warn-border)"; lock.style.color="#92400e"; lock.textContent="Add-on required"; head.appendChild(lock); }
+        } else {
+          const head=pane.querySelector(".card .card-head");
+          if(head){
+            const lock=head.querySelector("#schedLock"); if(lock) lock.remove();
+            if(!head.querySelector("#schedLive")){
+              const live=document.createElement("span"); live.id="schedLive"; live.className="pill"; live.style.background="var(--ok-bg)"; live.style.borderColor="var(--ok-border)"; live.style.color="var(--ok)"; live.innerHTML='<span class="dot ok"></span> Live 24/7'; head.appendChild(live);
+            }
+          }
+        }
       }catch{}
       // overrides
       renderOverrides(d.overrides||[]);
-      // also lock overrides table buttons
-      try{ const ovTable=document.getElementById("ovTable"); if(ovTable) ovTable.querySelectorAll("button").forEach(function(b){ b.disabled=true; b.title="View only — contact admin"; b.style.opacity=".45"; b.textContent="View only"; }); }catch{}
       refreshPreview();
     }catch(e){ pane.innerHTML=errorState(e.message, "loadSchedule()"); }
   }
@@ -723,10 +779,33 @@
     list.forEach(o=>{ h+='<tr><td>'+esc(o.date||o.override_id||"—")+'</td><td><span class="pill">'+(o.is_closed?"Closed":"Open")+'</span></td><td>'+esc((o.open_time||"")+" - "+(o.close_time||""))+'</td><td><button class="btn ghost small" onclick="deleteOverride(\''+esc(o.override_id)+'\')">✕</button></td></tr>'; });
     h+='</tbody></table></div>'; el.innerHTML=h;
   }
-  window.saveSchedule = async function(){ toast("View only — contact admin to change schedule"); return; };
+  window.saveSchedule = async function(){
+    const payload={
+      timezone:$("chTimezone")?.value||"UTC",
+      slotDuration:parseInt($("chSlot")?.value)||60,
+      bufferMinutes:parseInt($("chBuffer")?.value)||0,
+      minNoticeMinutes:parseInt($("chNotice")?.value)||0,
+      maxSeatsPerSlot:parseInt($("chSeats")?.value)||1,
+      hosts:($("chHosts")?.value||"").split(",").map(s=>s.trim()).filter(Boolean).map(name=>({name})),
+      weekly:parseWeekly()
+    };
+    try{
+      await api("PUT","/chrono/schedule",payload);
+      toast("Schedule saved — Chrono live 24/7");
+      const m=$("chMsg"); if(m) m.textContent="Saved";
+      refreshPreview();
+    }catch(e){ toast(e.message); }
+  };
   function parseWeekly(){ const w={}; document.querySelectorAll("#chWeekly input[data-day]").forEach(el=>{ const d=el.dataset.day, r=el.value.trim(); if(!r) w[d]=[]; else w[d]=r.split(",").map(s=>s.trim()).map(p=>{ const [a,b]=p.split("-"); return{start:a.trim(), end:b.trim()}; }); }); return w; }
-  window.addOverride = async function(){ toast("View only — contact admin to add overrides"); return; };
-  window.deleteOverride = async function(id){ toast("View only — contact admin to remove overrides"); return; };
+  window.addOverride = async function(){
+    const body={ date:$("ovDate")?.value, is_closed:$("ovClosed")?.value==="1", open_time:$("ovOpen")?.value, close_time:$("ovClose")?.value, reason:$("ovReason")?.value };
+    if(!body.date){ toast("Date required"); return; }
+    try{ await api("POST","/chrono/overrides",body); toast("Override saved"); loadSchedule(); }catch(e){ toast(e.message); }
+  };
+  window.deleteOverride = async function(id){
+    if(!confirm("Remove override?")) return;
+    try{ await api("DELETE","/chrono/overrides/"+encodeURIComponent(id)); toast("Removed"); loadSchedule(); }catch(e){ toast(e.message); }
+  };
   window.refreshPreview = async function(){
     const el=$("chPreview"); if(!el) return; el.textContent="Loading…";
     try{ const d=await api("GET","/chrono/availability?days=7"); const avail=d.availability||d; el.textContent=JSON.stringify(avail, null, 2).slice(0,3000); }catch(e){ el.textContent="Preview unavailable: "+e.message; }

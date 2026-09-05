@@ -84,6 +84,8 @@
       if(t==="knowledge") await renderKnowledge();
       if(t==="customers") await renderCustomers();
       if(t==="integration") renderIntegration();
+      if(t==="voice") await renderVoice();
+      if(t==="schedule") await renderSchedule();
       if(t==="audit") await renderAudit();
     }catch(e){toast(e.message)}
   }
@@ -331,6 +333,64 @@
     html+='<div class="card" style="background:var(--bg-subtle)"><h3>Need more?</h3><p class="muted" style="margin:0">Model, Knowledge and Behaviour are not duplicated here — open their dedicated sections. This tab is only for website connections.</p><div class="row" style="margin-top:10px"><button class="btn ghost small" onclick="document.querySelector(\'[data-tab=knowledge]\').click()">Knowledge →</button><button class="btn ghost small" onclick="document.querySelector(\'[data-tab=settings]\').click()">Settings →</button></div></div>';
     $("tab-integration").innerHTML=html;
   }
+  // --- Voice (AI) — Echo sidecar 24/7 ---
+  async function renderVoice(){
+    var p=$("tab-voice"); if(!p) return; p.innerHTML=skeleton(3);
+    try{
+      var cfg=state.config, call=cfg.call||{}, echo=cfg.echo||{};
+      // fetch addons for status
+      var addons=[]; try{ var d=await api("/api/admin/businesses/"+encodeURIComponent(state.businessId)+"/features"); /* flags */ }catch{}
+      try{ var ad=await fetch("/api/portal/addons",{headers:{Authorization:"Bearer "+state.token}}).then(r=>r.json()).catch(()=>({addons:[]})); addons=ad.addons||[]; }catch{}
+      var hasVoice = addons.some(function(a){return a.key==="voice_channel" && a.enabled}) || state.plan==="scale" || state.plan==="unlimited";
+      var html='<div class="card"><div class="card-head"><div><h3>Voice — Echo 24/7</h3><p class="muted" style="margin:4px 0 0">AI voice, phone-ready. Sidecar live with NOVA AI.</p></div><span class="status '+(hasVoice?"ok":"neutral")+'"><span class="dot '+(hasVoice?"ok":"neutral")+'"></span> '+(hasVoice?"Live 24/7":"Add-on")+'</span></div>';
+      html+='<div class="row"><div><label>Greeting<input id="avGreet" value="'+esc(call.greetingTemplate||"")+'"></label></div><div><label>Handoff phone<input id="avPhone" value="'+esc(call.handoffPhone||"")+'"></label></div></div>';
+      html+='<div class="row"><div><label>Handoff email<input id="avEmail" value="'+esc(call.handoffEmail||"")+'"></label></div><div><label>Language<select id="avLang"><option value="en" '+(echo.defaultLanguage==="en"?"selected":"")+'>en</option><option value="auto" '+(echo.defaultLanguage==="auto"?"selected":"")+'>auto</option><option value="es" '+(echo.defaultLanguage==="es"?"selected":"")+'>es</option><option value="fr" '+(echo.defaultLanguage==="fr"?"selected":"")+'>fr</option></select></label></div><div><label>Sidecar<input id="avSidecar" value="'+esc(echo.sidecarUrl||"http://127.0.0.1:8765")+'"></label></div></div>';
+      html+='<label>Initial prompt<input id="avPrompt" value="'+esc(echo.initialPrompt||"")+'"></label>';
+      html+='<div class="row" style="margin-top:12px"><button class="btn primary" onclick="saveAdminVoice()">Save Voice — Live 24/7</button><button class="btn ghost" onclick="testAdminVoice()">Test</button><span class="muted xs">Plan '+esc(state.plan)+' • '+(hasVoice?"enabled":"enable via Integrations or Scale")+'</span></div></div>';
+      html+='<div class="card" id="avHealth"><h3>Sidecar health</h3><div class="muted xs">Checking '+esc(echo.sidecarUrl||"http://127.0.0.1:8765")+'…</div></div>';
+      p.innerHTML=html;
+      // health check
+      (async function(){
+        try{ var h=await fetch("/api/health/echo").then(function(r){return r.json()}).catch(function(){return {sidecar:{available:false}}}); var av=h.sidecar&&h.sidecar.available; var el=document.getElementById("avHealth"); if(el) el.innerHTML='<h3>Sidecar health <span class="status '+(av?"ok":"warn")+'"><span class="dot '+(av?"ok":"warn")+'"></span> '+(av?"Available 24/7":"Unavailable — start echo/server.py")+'</span></h3><div class="muted xs">'+esc(av?"Echo ready — voice calls will work.":"Run: python echo/server.py --port 8765 or pm2 start ecosystem.config.js")+'</div>'; }catch{}
+      })();
+    }catch(e){ p.innerHTML='<div class="error-state"><span>'+esc(e.message)+'</span></div>'; }
+  }
+  window.saveAdminVoice=async function(){
+    var patch={call:{greetingTemplate:$("avGreet").value, handoffPhone:$("avPhone").value, handoffEmail:$("avEmail").value}, echo:{defaultLanguage:$("avLang").value, sidecarUrl:$("avSidecar").value, initialPrompt:$("avPrompt").value, enabled:true}};
+    try{ await patchConfig(patch); toast("Voice saved — Echo live 24/7 with NOVA AI"); }catch(e){ toast(e.message); }
+  };
+  window.testAdminVoice=function(){ toast("Voice test — sidecar at "+($("avSidecar")?.value||"127.0.0.1:8765")); };
+  // --- Schedule (AI) — Chrono 24/7 ---
+  async function renderSchedule(){
+    var p=$("tab-schedule"); if(!p) return; p.innerHTML=skeleton(3);
+    try{
+      var cfg=state.config, chrono=cfg.chrono||{};
+      var tz=chrono.timezone||"UTC", slot=chrono.slotDuration||60, buf=chrono.bufferMinutes||0, notice=chrono.minNoticeMinutes||0, seats=chrono.maxSeatsPerSlot||1, hosts=(chrono.hosts||[]).map(function(h){return h.name}).join(", ");
+      var html='<div class="card"><div class="card-head"><div><h3>Schedule — Chrono 24/7</h3><p class="muted" style="margin:4px 0 0">Business hours, slots, holidays — live with NOVA AI.</p></div><span class="status ok"><span class="dot ok"></span> Live 24/7</span></div>';
+      html+='<div class="row"><div><label>Timezone<input id="adTz" value="'+esc(tz)+'"></label></div><div><label>Slot (min)<input id="adSlot" type="number" value="'+slot+'"></label></div><div><label>Buffer<input id="adBuf" type="number" value="'+buf+'"></label></div><div><label>Notice<input id="adNotice" type="number" value="'+notice+'"></label></div><div><label>Seats<input id="adSeats" type="number" value="'+seats+'"></label></div></div>';
+      html+='<label>Hosts<input id="adHosts" value="'+esc(hosts)+'" placeholder="Alice, Bob"></label><div id="adWeekly" style="margin-top:12px"></div><div class="row" style="margin-top:12px"><button class="btn primary" onclick="saveAdminSchedule()">Save Schedule — Chrono live 24/7</button></div></div>';
+      html+='<div class="card"><h3>Live preview</h3><div id="adPreview" class="code" style="min-height:60px">Loading…</div><button class="btn ghost small" style="margin-top:8px" onclick="refreshAdminPreview()">Refresh</button></div>';
+      p.innerHTML=html;
+      var wh=''; var days=["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+      days.forEach(function(day){ var v=(chrono.weekly&&chrono.weekly[day]||[]).map(function(b){return b.start+"-"+b.end}).join(", "); wh+='<div class="row"><div style="min-width:90px"><label>'+day+'</label></div><div><input data-day="'+day+'" value="'+esc(v)+'" placeholder="09:00-17:00"></div></div>'; });
+      var el=$("adWeekly"); if(el) el.innerHTML=wh;
+      refreshAdminPreview();
+    }catch(e){ p.innerHTML='<div class="error-state"><span>'+esc(e.message)+'</span></div>'; }
+  }
+  window.saveAdminSchedule=async function(){
+    var ch={timezone:$("adTz").value, slotDuration:parseInt($("adSlot").value)||60, bufferMinutes:parseInt($("adBuf").value)||0, minNoticeMinutes:parseInt($("adNotice").value)||0, maxSeatsPerSlot:parseInt($("adSeats").value)||1, hosts:($("adHosts").value||"").split(",").map(function(s){return s.trim()}).filter(Boolean).map(function(n){return {name:n}}), weekly:{}};
+    document.querySelectorAll("#adWeekly input[data-day]").forEach(function(el){ var d=el.dataset.day, r=el.value.trim(); if(!r) ch.weekly[d]=[]; else ch.weekly[d]=r.split(",").map(function(s){return s.trim()}).map(function(p){ var a=p.split("-"); return {start:a[0].trim(), end:a[1].trim()}; }); });
+    try{ await patchConfig({chrono:ch}); toast("Schedule saved — Chrono live 24/7"); refreshAdminPreview(); }catch(e){ toast(e.message); }
+  };
+  window.refreshAdminPreview=async function(){
+    var el=$("adPreview"); if(!el) return; el.textContent="Loading…";
+    try{ var d=await api("/api/admin/businesses/"+encodeURIComponent(state.businessId)+"/analytics"); el.textContent=JSON.stringify({chrono:state.config.chrono},null,2).slice(0,2000); }catch(e){ el.textContent=e.message; }
+    try{
+      var key=state.business.integrationKey||state.business.integration_key||"";
+      var av=await fetch("/api/v1/widget/availability?days=7",{headers: key?{"x-nova-key":key}:{}}).then(function(r){return r.json()}).catch(function(){return null});
+      if(av&&av.availability) $("adPreview").textContent=JSON.stringify(av.availability,null,2).slice(0,3000);
+    }catch{}
+  };
   // --- Audit / Logs ---
   async function renderAudit(target){
     var paneId = target==="logs" ? "tab-logs" : (target==="usage" ? "tab-usage" : "tab-audit");
